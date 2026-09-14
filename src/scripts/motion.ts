@@ -10,8 +10,16 @@
  *   2. The rail's hairline fills as you traverse a chapter. The rail already
  *      says how much chapter there is ("3 entries"); this makes it say how much
  *      is left. Information, not decoration.
- *   3. The chapter you are in has an inked numeral; the others sit in --rule.
+ *   3. The chapter you are in has an inked numeral; the others sit back.
  *      One property, one idea — no fade-up on anything.
+ *   4. Chapter II: each plate scales and settles into its frame as it rises,
+ *      scrubbed to scroll rather than fired once, so it genuinely settles under
+ *      the reader's hand. Its entry inks up as it takes focus.
+ *   5. Chapter IV: the figures count up on enter, once.
+ *
+ * The hero entrance is deliberately NOT here — it is a CSS animation armed
+ * before first paint in index.astro, so it starts on frame one and completes
+ * even if this module never loads.
  *
  * `prefers-reduced-motion: reduce` means none of this initialises, and Lenis and
  * GSAP are never even fetched — they load behind a dynamic import so a reader
@@ -102,22 +110,90 @@ async function start() {
         onToggle: (self) => chapter.classList.toggle('is-active', self.isActive),
       });
     });
+
+    /* Chapter II — scale and settle, the one committed idea for the work
+       entries. Scrubbed, not fired: the plate settles into its frame as you
+       scroll it up the viewport, which is what separates this from a reveal
+       that plays at you. No opacity, no translate — the generic default is
+       fade-and-slide-up and this is neither. */
+    document.querySelectorAll<HTMLElement>('.entry').forEach((entry) => {
+      const image = entry.querySelector<HTMLElement>('.plate img');
+      if (image) {
+        gsap.fromTo(
+          image,
+          { scale: 1.08 },
+          {
+            scale: 1,
+            ease: 'none',
+            scrollTrigger: { trigger: entry, start: 'top 90%', end: 'top 35%', scrub: true },
+          },
+        );
+      }
+
+      // The entry inks up once it has settled, and stays inked.
+      ScrollTrigger.create({
+        trigger: entry,
+        start: 'top 55%',
+        once: true,
+        onEnter: () => entry.classList.add('is-settled'),
+      });
+    });
+
+    /* Chapter IV — count up on enter, once, never repeating. The finished
+       figure is already in the HTML; this resets to zero only at the moment
+       it starts, so a reader who never reaches Chapter IV sees the real
+       number and nothing ever shows a stale zero. */
+    document.querySelectorAll<HTMLElement>('.figure .value').forEach((el) => {
+      const to = Number(el.dataset.countTo);
+      if (!Number.isFinite(to)) return;
+      const counter = { v: 0 };
+      ScrollTrigger.create({
+        trigger: el,
+        start: 'top 85%',
+        once: true,
+        onEnter: () => {
+          el.textContent = '0';
+          gsap.to(counter, {
+            v: to,
+            duration: 1.1,
+            ease: 'power2.out',
+            onUpdate: () => (el.textContent = String(Math.round(counter.v))),
+            onComplete: () => (el.textContent = String(to)),
+          });
+        },
+      });
+    });
   });
 
-  root.classList.add('motion');
+  // `html.motion` flips a batch of colour states at once. Those properties carry
+  // transitions, so applying the class would animate every one of them in
+  // unison — a visible shimmer over anything currently on screen. Suppress
+  // transitions for two frames so the initial state is simply the state.
+  root.classList.add('motion', 'motion-arming');
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => root.classList.remove('motion-arming')),
+  );
+
   ScrollTrigger.refresh();
   // Webfonts land after first paint and change the height of everything.
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
 
   teardown = () => {
-    root.classList.remove('motion');
+    // The hero entrance has already finished by any plausible teardown, and its
+    // fill-mode end state is the resting page — dropping the class simply hands
+    // the styles back to the static build.
+    root.classList.remove('motion', 'motion-pending');
     document.removeEventListener('click', onAnchor);
     gsap.ticker.remove(onRaf);
     ctx.revert();
     lenis.destroy();
     document
-      .querySelectorAll('.chapter.is-active')
-      .forEach((c) => c.classList.remove('is-active'));
+      .querySelectorAll('.chapter.is-active, .entry.is-settled')
+      .forEach((c) => c.classList.remove('is-active', 'is-settled'));
+    // Counting may have been interrupted mid-tween; restore the real figures.
+    document.querySelectorAll<HTMLElement>('.figure .value').forEach((el) => {
+      if (el.dataset.countTo) el.textContent = el.dataset.countTo;
+    });
   };
   starting = false;
 }

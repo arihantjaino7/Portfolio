@@ -160,15 +160,17 @@ numbered and **not** rendered as pills with percentage bars.
 
 ---
 
-## 3. Chapter II motion — decided
+## 3. Chapter II motion — decided, then reversed
 
-**The pinned plate.** Three project entries scroll in the left column; one media frame
-in the right column stays pinned and steps between the three stills. The reasoning, and
-why horizontal pinned scroll was rejected, is in `DESIGN.md` §5.
+Planned as "the pinned plate"; **shipped as scale-and-settle**. The brief names two
+options and asks for one, committed — the pinned plate was a third thing, and with
+BhoomiSetu still a draft it would have stepped exactly once while halving the page's
+strongest image. Full reasoning in `DESIGN.md` §5.
 
-The Phase 1 markup is already shaped for it: each project is an `<article>` carrying its
-own `<figure>`. Phase 3 promotes those figures into a shared well at ≥1024px. Nothing is
-rebuilt, and reduced-motion simply returns the Phase 1 document.
+What shipped: each plate's image enters at `scale(1.08)` and settles to `scale(1)`
+scrubbed to scroll position, not fired on entry, while the entry's copy inks up as it
+takes focus. No opacity, no translate. The layout is identical across Phases 1 and 3 at
+every width, which is why reduced-motion simply returns the Phase 1 document.
 
 ---
 
@@ -215,10 +217,11 @@ proof:
 
 ## 5. Build order
 
-- **Phase 1 (this session)** — every route, all content, responsive to 360px, zero client
-  JS, Cloudflare Pages config wired. Verified with `astro build` and Lighthouse mobile.
-- **Phase 2** — Lenis + chapter choreography. Not started until Phase 1 is live and seen.
-- **Phase 3** — hero sequence, the pinned plate, proof count-up, reduced-motion.
+- **Phase 1** — every route, all content, responsive to 360px, zero client JS, Cloudflare
+  Pages config wired. *Done.*
+- **Phase 2** — Lenis, the rail progress fill, the active-chapter numeral. *Done.*
+- **Phase 3** — hero entrance, Chapter II scale-and-settle, proof count-up,
+  reduced-motion throughout. *Done.*
 
 ---
 
@@ -235,6 +238,8 @@ Things in my first draft of this plan that were the generic default, and what th
 | `SKILLS` / `SELECTED WORK` in tracked-out caps | lowercase mono at normal tracking | Banned eyebrow style. |
 | Skills as a numbered or progress-barred grid | Unordered mono list grouped by kind | The brief: numbered markers only where content is genuinely a sequence. Skills are a set. |
 | `fade-up` on every section + `hover:-translate-y-1` on cards | One committed idea per chapter; nothing else moves | Named in the brief as the generated-looking default. |
-| Horizontal pinned scroll for Chapter II | The pinned plate | Horizontal pinning converts vertical space to sideways travel, contradicting "give Chapter II the most vertical space." `DESIGN.md` §5. |
+| Horizontal pinned scroll for Chapter II | Scale-and-settle, scrubbed to scroll | Horizontal pinning converts vertical space to sideways travel, contradicting "give Chapter II the most vertical space." The pinned plate I proposed instead was a third option the brief never offered. `DESIGN.md` §5. |
+| A one-shot reveal fired on entry | Scrubbed to scroll position | A reveal that plays at you on a trigger is the generic pattern. Tying it to scroll makes it settle under the reader's hand, which is the whole idea. |
+| GSAP-driven hero entrance | CSS keyframes armed before first paint | A JS entrance starts late and leaves the hero hidden if the bundle fails. It also tempts you into `opacity: 0`, which delays largest contentful paint. |
 | Icon per area in Chapter III | Prose only | The brief says no icons. Lucide icons in a 2×2 grid is the default and was the first thing I reached for. |
 | Dark mode toggle | Light only, committed | Two half-considered palettes instead of one finished one. |

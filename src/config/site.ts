@@ -38,25 +38,35 @@ export const meta = {
   twitterHandle: '@arihantjaino7',
 } as const;
 
-/** Chapter IV. The figures are the visual element — PLAN.md §2. */
+/**
+ * Chapter IV. The figures are the visual element — PLAN.md §2.
+ *
+ * Split into prefix / value / suffix rather than one string so the Phase 3
+ * count-up animates the number without parsing it back out of display copy,
+ * and so the static HTML still renders the finished figure for a reader with
+ * no JavaScript and for a crawler.
+ */
 export const achievements = [
   {
-    figure: '1st',
-    countTo: 1,
+    prefix: '',
+    value: 1,
+    suffix: 'st',
     event: 'Amity Ideathon',
     year: '2026',
     detail: 'AI / Digital Technologies & Smart Systems',
   },
   {
-    figure: '12th',
-    countTo: 12,
+    prefix: '',
+    value: 12,
+    suffix: 'th',
     event: 'OMNIKON National Hackathon',
     year: '2026',
     detail: 'of 3,000+ submissions nationwide',
   },
   {
-    figure: 'top 6%',
-    countTo: 6,
+    prefix: 'top ',
+    value: 6,
+    suffix: '%',
     event: 'Adobe Hackathon',
     year: '2026',
     detail: 'nationally',

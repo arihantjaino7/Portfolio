@@ -8,11 +8,13 @@ live in **[PLAN.md](./PLAN.md)**. The brief is **[SPEC.md](./SPEC.md)**.
 
 **Phase 1** — the complete static site, zero client JavaScript. *Done.*
 **Phase 2** — Lenis smooth scroll and chapter choreography, on `/` only. *Done.*
-**Phase 3** — hero entrance, the pinned plate for Chapter II, proof count-up.
+**Phase 3** — hero entrance, Chapter II scale-and-settle, proof count-up. *Done.*
 
-Motion lives in `src/scripts/motion.ts` and is imported by `src/pages/index.astro`
-alone. Every other route still ships zero client JavaScript. Under
-`prefers-reduced-motion: reduce`, Lenis and GSAP are never fetched at all.
+Scroll motion lives in `src/scripts/motion.ts`, imported by `src/pages/index.astro`
+alone — every other route still ships zero client JavaScript. The hero entrance is a CSS
+animation armed by an inline script before first paint, so it does not wait on that
+bundle and completes even if the bundle fails. Under `prefers-reduced-motion: reduce`
+nothing is armed and Lenis and GSAP are never fetched at all.
 
 ---
 

@@ -9,10 +9,11 @@
  *   npm i -D playwright lighthouse chrome-launcher
  *   node scripts/verify.mjs
  *
- * Phase 2 baseline: performance / a11y / best-practices / SEO all 100 on
+ * Phase 3 baseline: performance / a11y / best-practices / SEO all 100 on
  * /, /work, /work/arc and /about; CLS 0; no overflow; every focusable element
- * shows a 2px --mark ring; motion initialises on / and is entirely absent —
- * including the network requests for it — under prefers-reduced-motion.
+ * shows a 2px --mark ring; the hero entrance, the Chapter II settle and the
+ * Chapter IV count-up all behave; and every bit of it is absent — including the
+ * network requests for it — under prefers-reduced-motion.
  */
 import { chromium } from 'playwright';
 import lighthouse from 'lighthouse';
@@ -134,6 +135,103 @@ const scaleY = (el) => +new DOMMatrixReadOnly(getComputedStyle(el).transform).d.
       console.log('FAIL reduced-motion:', msg);
       failed++;
     }
+  }
+  await page.close();
+}
+
+/* ── Phase 3: entrance, settle, count-up ─────────────────────────────── */
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await page.goto(BASE, { waitUntil: 'commit' });
+  await page.waitForTimeout(200);
+
+  // The entrance must be transform-only: opacity would delay the largest
+  // contentful paint, and a fade is the generic default the brief rules out.
+  const mid = await page.evaluate(() => {
+    const n = document.querySelector('.name');
+    return {
+      ty: +new DOMMatrixReadOnly(getComputedStyle(n).transform).f.toFixed(1),
+      opacity: getComputedStyle(n).opacity,
+      masked: getComputedStyle(n.parentElement).overflow,
+    };
+  });
+  if (!(mid.ty > 1)) { console.log(`FAIL hero: not mid-rise at 200ms (translateY ${mid.ty})`); failed++; }
+  if (mid.opacity !== '1') { console.log(`FAIL hero: entrance uses opacity (${mid.opacity})`); failed++; }
+  if (mid.masked !== 'hidden') { console.log(`FAIL hero: rise wrapper is not masked (${mid.masked})`); failed++; }
+
+  await page.waitForTimeout(1800);
+  const settledHero = await page.evaluate(() =>
+    +new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.name')).transform).f.toFixed(1));
+  if (Math.abs(settledHero) > 0.5) { console.log(`FAIL hero: did not settle (${settledHero})`); failed++; }
+
+  await page.waitForFunction(() => document.documentElement.classList.contains('motion'), null, { timeout: 8000 })
+    .catch(() => { console.log('FAIL motion never initialised'); failed++; });
+
+  // Chapter II: the plate arrives oversized and settles under the scroll.
+  const plateScale = () => page.evaluate(() =>
+    +new DOMMatrixReadOnly(
+      getComputedStyle(document.querySelector('.entry .plate img')).transform).a.toFixed(3));
+  const park = (frac) => page.evaluate((f) => {
+    const e = document.querySelector('.entry');
+    window.scrollTo(0, window.scrollY + e.getBoundingClientRect().top - innerHeight * f);
+  }, frac);
+
+  await park(0.88); await page.waitForTimeout(1200);
+  const entering = await plateScale();
+  await park(0.25); await page.waitForTimeout(1400);
+  const rested = await plateScale();
+  const isSettled = await page.evaluate(() => document.querySelector('.entry').classList.contains('is-settled'));
+
+  if (!(entering > 1.02)) { console.log(`FAIL settle: plate does not enter oversized (${entering})`); failed++; }
+  if (!(rested <= 1.005)) { console.log(`FAIL settle: plate does not reach rest (${rested})`); failed++; }
+  if (!isSettled) { console.log('FAIL settle: entry never marked settled'); failed++; }
+
+  // Chapter IV: counts, lands on the real values, never repeats.
+  const figures = () => page.evaluate(() =>
+    [...document.querySelectorAll('.figure .value')].map((e) => e.textContent).join(','));
+  await page.evaluate(() => document.querySelector('#proof').scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(200);
+  const mid4 = await figures();
+  await page.waitForTimeout(1800);
+  const end4 = await figures();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(700);
+  await page.evaluate(() => document.querySelector('#proof').scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(250);
+  const replay = await figures();
+
+  if (end4 !== '1,12,6') { console.log(`FAIL count-up: wrong final values (${end4})`); failed++; }
+  if (mid4 === end4) { console.log('FAIL count-up: snapped instead of counting'); failed++; }
+  if (replay !== '1,12,6') { console.log(`FAIL count-up: replayed on re-entry (${replay})`); failed++; }
+  await page.close();
+}
+
+{
+  // Under reduce the page must be the static build, in full, with nothing armed.
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1800);
+  const st = await page.evaluate(() => {
+    const n = document.querySelector('.name');
+    const e = document.querySelector('.entry');
+    return {
+      armed: document.documentElement.classList.contains('motion-pending'),
+      heroTy: +new DOMMatrixReadOnly(getComputedStyle(n).transform).f.toFixed(1),
+      heroVisible: n.getBoundingClientRect().height > 20,
+      plate: +new DOMMatrixReadOnly(getComputedStyle(e.querySelector('.plate img')).transform).a.toFixed(3),
+      title: getComputedStyle(e.querySelector('.title a')).color,
+      figures: [...document.querySelectorAll('.figure .value')].map((x) => x.textContent).join(','),
+    };
+  });
+  const checks = [
+    [!st.armed, 'hero entrance must not be armed under reduce'],
+    [st.heroTy === 0 && st.heroVisible, `hero must sit in place, got translateY ${st.heroTy}`],
+    [st.plate === 1, `plate must be at rest, got scale ${st.plate}`],
+    [st.title === 'rgb(22, 24, 26)', `entry text must stay inked, got ${st.title}`],
+    [st.figures === '1,12,6', `figures must show real values, got ${st.figures}`],
+  ];
+  for (const [ok, msg] of checks) {
+    if (!ok) { console.log('FAIL reduced-motion:', msg); failed++; }
   }
   await page.close();
 }

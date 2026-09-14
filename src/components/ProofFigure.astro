@@ -1,20 +1,32 @@
 ---
 /**
  * Chapter IV. The number is the visual element — no logo row, no badge, no card.
- * `data-count-to` is the hook Phase 3 counts up; it is inert in Phase 1.
+ *
+ * The finished figure is in the HTML: a reader with no JavaScript, and a
+ * crawler, both see "12th". Phase 3 only resets the digits to zero at the
+ * moment the figure enters the viewport and counts them up, once.
+ *
+ * The value span is held at its final character width so counting 0 → 12 cannot
+ * shift anything around it.
  */
 interface Props {
-  figure: string;
-  countTo: number;
+  prefix: string;
+  value: number;
+  suffix: string;
   event: string;
   year: string;
   detail: string;
 }
-const { figure, countTo, event, year, detail } = Astro.props;
+const { prefix, value, suffix, event, year, detail } = Astro.props;
+const digits = String(value).length;
 ---
 
 <li class="proof-figure">
-  <p class="figure" data-count-to={countTo}>{figure}</p>
+  <p class="figure">
+    {prefix && <span>{prefix}</span>}
+    <span class="value" data-count-to={value} style={`min-width: ${digits}ch`}>{value}</span>
+    <span>{suffix}</span>
+  </p>
   <hr />
   <p class="event">{event}</p>
   <p class="meta detail">{detail} · {year}</p>
@@ -27,10 +39,15 @@ const { figure, countTo, event, year, detail } = Astro.props;
     font-weight: 500;
     font-size: var(--text-figure);
     line-height: 0.9;
-    white-space: nowrap; /* "top 6%" must never break across two lines */
     letter-spacing: -0.05em;
     color: var(--color-mark);
     margin: 0 0 1rem;
+    white-space: nowrap; /* "top 6%" must never break across two lines */
+  }
+  .value {
+    display: inline-block;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
   }
   hr { margin-bottom: 1rem; }
   .event {

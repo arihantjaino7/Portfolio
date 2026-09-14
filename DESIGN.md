@@ -132,26 +132,42 @@ and count on one line above a full-width rule. No sticky behaviour on small scre
 
 ---
 
-## 5. Motion, decided in advance (built in Phases 2–3)
+## 5. Chapter II motion — and the one decision that was reversed
 
-Recorded here so Phase 1's markup is already the right shape.
+**Phase 1 planned "the pinned plate." Phase 3 shipped scale-and-settle. That was a
+reversal, and this is why.**
 
-Chapter II — **the pinned plate.** The brief demands one idea, committed. The three
-project entries scroll normally in the left content column while a **single** media frame
-in the right column stays pinned and steps between the three project stills; the active
-entry's row goes from `--ink-soft` to `--ink` as it takes the plate.
+The brief offers exactly two options for the work entries — *horizontal pinned scroll, or
+a scale-and-settle reveal per project* — and asks for one, committed. The pinned plate
+(a single media frame in a right-hand column, stepping between stills as text scrolls
+past on the left) was a third thing, invented here rather than chosen from the brief.
+Three arguments retired it:
 
-Why this and not horizontal pinned scroll: the brief says Chapter II gets *the most
-vertical space on the page*. A horizontal pin converts vertical space into sideways
-travel — it directly contradicts the requirement. With three projects a horizontal track
-also spends a great deal of machinery on very little content, and it needs an entirely
-separate mobile structure, which means Phase 1's static page and Phase 3's animated page
-stop being the same document.
+1. **It was not one of the two options.** The instruction was to pick one and commit, not
+   to design a third.
+2. **Two entries is not a sequence.** BhoomiSetu is still a draft, so the shared well
+   would step exactly once. That is a great deal of machinery — a second column, tall
+   held blocks, a hand-off — for one transition.
+3. **It costs the page its strongest image.** Chapter II is the centre of gravity and the
+   brief says give it the most vertical space. A plate confined to a right-hand column is
+   roughly half the width of the full-bleed figure the static build already has. Halving
+   the best thing on the page to add a mechanic is a bad trade.
 
-The pinned plate keeps one document. Phase 1 ships a stacked list where every project
-carries its own figure; Phase 3 promotes those figures into a shared well at ≥1024px and
-steps them. Below 1024px the Phase 1 layout is the final layout. Nothing is thrown away,
-and `prefers-reduced-motion: reduce` returns the page to exactly the Phase 1 build.
+Horizontal pinned scroll stays rejected for the original reason: pinning horizontally
+converts vertical space into sideways travel, directly contradicting "most vertical
+space," and it needs a separate mobile structure — so the static page and the animated
+page stop being the same document.
+
+**What shipped — scale-and-settle, scrubbed.** Each plate's image enters at `scale(1.08)`
+and settles to `scale(1)` as the entry rises through the viewport, tied to scroll position
+rather than fired once on entry. That distinction is the whole idea: it settles *under the
+reader's hand* instead of playing at them. As it lands, the entry's copy goes
+`--ink-soft` → `--ink` and the frame's hairline goes `--rule` → `--ink-soft`: the project
+takes focus. There is no opacity anywhere and no translate — fade-and-slide-up is exactly
+the generic default the brief names, and this is neither.
+
+The layout does not change between Phase 1 and Phase 3, at any width, which is why
+`prefers-reduced-motion: reduce` can simply return the Phase 1 document.
 
 ---
 
@@ -195,6 +211,32 @@ the Phase 1 build exactly: sticky rail, inked numerals, collapsed hairline.
 Initialisation waits for `requestIdleCallback` (1500ms ceiling). Running GSAP
 eagerly cost 0.6s of LCP on mobile; nothing here is needed before the first
 scroll.
+
+## 5c. What Phase 3 shipped
+
+**Hero — one entrance, as a CSS animation.** Three ruled lines rise from their own edges
+on a 70ms stagger while the metadata's rule draws left to right: one sweep down the
+block, not a cascade. Nothing touches opacity.
+
+It is deliberately *not* GSAP. It is a CSS keyframe animation armed by a two-line inline
+script in `<head>` before first paint, which buys two things. It starts on frame one
+rather than waiting for a module to download and parse. And if the motion bundle never
+arrives, the entrance still completes instead of leaving the hero stuck hidden — the
+failure mode of every JS-driven entrance.
+
+Avoiding opacity was a measured decision, not taste: an element that is `opacity: 0` is
+not painted, so it does not count for largest contentful paint. The transform-only
+entrance left LCP at 1.7s — unchanged from the static build.
+
+**Chapter IV — count-up on enter, once.** The finished figures are in the HTML, so a
+reader with no JavaScript and a crawler both see `12th`. The count resets to zero only at
+the instant it starts, and `once: true` means it never repeats. Each value span is held at
+its final character width, so counting `0 → 12` cannot shift anything around it.
+
+**State classes arrive late.** `html.motion` flips a batch of colour states at once, and
+those properties carry transitions — applying the class would animate all of them in
+unison, a visible shimmer across whatever is on screen. Transitions are suppressed for
+two frames while the class lands, so the initial state is simply the state.
 
 ## 6. Standing constraints
 

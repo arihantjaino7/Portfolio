@@ -13,11 +13,31 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
 ---
 
 <Base ogImage={assets.og('default')}>
-  <!-- Hero. One orchestrated entrance in Phase 3; nothing moves in Phase 1. -->
+  <!--
+    Armed before first paint so the hero entrance starts on frame one. Readers
+    who asked for reduced motion never get the class, so the initial states in
+    global.css never apply and the page is the static build.
+  -->
+  <script is:inline>
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('motion-pending');
+    }
+  </script>
+
+  <!--
+    Hero. One orchestrated entrance: three ruled lines, each rising from its
+    own edge on a 70ms stagger. It is a single sweep down the block, not a
+    cascade of fade-ups — nothing here touches opacity.
+
+    It is a CSS animation, not a GSAP one, and it is armed by the inline script
+    in <head> before first paint. So it starts on the first frame instead of
+    waiting for a module to download, and if the motion bundle never arrives the
+    hero still finishes its entrance rather than staying hidden.
+  -->
   <section class="hero" aria-labelledby="hero-name">
     <div class="shell">
-      <h1 id="hero-name" class="name">{person.name}</h1>
-      <p class="statement measure">{person.statement}</p>
+      <div class="rise"><h1 id="hero-name" class="name">{person.name}</h1></div>
+      <div class="rise"><p class="statement measure">{person.statement}</p></div>
 
       <dl class="ident meta">
         <div><dt>study</dt><dd>{person.degree.toLowerCase()}</dd></div>
@@ -105,11 +125,24 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
   .hero {
     padding-block: clamp(4rem, 16vh, 11rem) clamp(4rem, 12vh, 8rem);
   }
+  /* Masks for the rise. The mask has to hug the text: any margin left on the
+     child inflates the wrapper, the translate then no longer clears it, and the
+     line reads as "sitting lower" instead of rising from its rule. Spacing
+     therefore lives on the wrapper, never on the child. The small padding and
+     matching negative margin give descenders somewhere to go. */
+  .rise {
+    overflow: hidden;
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+  }
+  .rise > * { margin-bottom: 0; }
+  .rise:nth-of-type(1) { margin-bottom: calc(1.5rem - 0.12em); }
+
   .name {
     font-size: var(--text-hero);
     font-weight: 600;
     letter-spacing: -0.045em;
-    margin: 0 0 1.5rem;
+    margin: 0;
   }
   .statement {
     font-size: clamp(1.125rem, 2.4vw, 1.5rem);
