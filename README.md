@@ -22,6 +22,26 @@ npm run preview    # serve dist/
 npm run check      # astro check — must stay at 0 errors
 ```
 
+### View it on your phone
+
+The site is built mobile-first and a 40-second phone scan is the primary use case,
+so check it on a real handset rather than a narrow browser window.
+
+```bash
+npm run dev:host   # binds the dev server to the LAN, not just localhost
+```
+
+Astro prints a **Network** address alongside the local one — something like
+`http://192.168.1.7:4321/`. Open that on the phone, with both devices on the same
+Wi-Fi. Edits hot-reload on the phone too.
+
+- If no Network address appears, or the phone times out, Windows Firewall is
+  usually blocking it: allow Node.js on **private** networks when prompted.
+- `npm run preview:host` does the same for the built output in `dist/`, which is
+  what actually ships — use it for a final look.
+- Not on the same network? `npx cloudflared tunnel --url http://localhost:4321`
+  prints a temporary public URL that works from anywhere.
+
 ## Deploy to Cloudflare Pages
 
 The repo is already configured; connecting it is a one-time, two-minute job.

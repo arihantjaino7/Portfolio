@@ -8,11 +8,13 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "dev:host": "astro dev --host",
     "build": "astro build",
     "preview": "astro preview",
+    "preview:host": "astro preview --host",
     "check": "astro check",
     "assets": "node scripts/gen-assets.mjs",
-    "fonts:sync": "cp node_modules/@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2 node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2 public/fonts/",
+    "fonts:sync": "node scripts/sync-fonts.mjs",
     "fonts:register": "bash scripts/install-fonts.sh"
   },
   "dependencies": {
