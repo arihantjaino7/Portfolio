@@ -1,23 +1,22 @@
 ---
-import { getCollection } from 'astro:content';
+/**
+ * Phase 1 — foundation shell. REDESIGN.md §1, §2 Phase 1.
+ *
+ * Six empty full-height sections in the final page order. No section content
+ * lands until its own phase (2-6); this phase only proves the motion engine
+ * is wired: Lenis + GSAP ScrollTrigger initialise, and the one test element
+ * below mask-reveals on load.
+ */
 import Base from '../layouts/Base.astro';
-import Chapter from '../components/Chapter.astro';
-import ProjectRow from '../components/ProjectRow.astro';
-import ProofFigure from '../components/ProofFigure.astro';
-import { person, achievements, areas } from '../config/site';
-import { assets, ratio } from '../config/assets';
-import { withBase } from '../config/paths';
-
-const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.order - b.data.order,
-);
+import Reveal from '../components/Reveal.astro';
+import { assets } from '../config/assets';
 ---
 
 <Base ogImage={assets.og('default')}>
   <!--
-    Armed before first paint so the hero entrance starts on frame one. Readers
-    who asked for reduced motion never get the class, so the initial states in
-    global.css never apply and the page is the static build.
+    Armed before first paint. Kept from the previous build: later phases that
+    need a load-only entrance (not a scroll-triggered one) key off this class
+    the same way the old hero did, without waiting on the motion bundle.
   -->
   <script is:inline>
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -25,175 +24,35 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
     }
   </script>
 
-  <!--
-    Hero. One orchestrated entrance: three ruled lines, each rising from its
-    own edge on a 70ms stagger. It is a single sweep down the block, not a
-    cascade of fade-ups — nothing here touches opacity.
-
-    It is a CSS animation, not a GSAP one, and it is armed by the inline script
-    in <head> before first paint. So it starts on the first frame instead of
-    waiting for a module to download, and if the motion bundle never arrives the
-    hero still finishes its entrance rather than staying hidden.
-  -->
-  <section class="hero" aria-labelledby="hero-name">
+  <section id="landing" class="screen">
     <div class="shell">
-      <div class="rise"><h1 id="hero-name" class="name">{person.name}</h1></div>
-      <div class="rise"><p class="statement measure">{person.statement}</p></div>
-
-      <dl class="ident meta">
-        <div><dt>study</dt><dd>{person.degree.toLowerCase()}</dd></div>
-        <div><dt>at</dt><dd>{person.school.toLowerCase()}</dd></div>
-        <div><dt>span</dt><dd>{person.span}</dd></div>
-        <div><dt>based</dt><dd>{person.location.toLowerCase()}</dd></div>
-      </dl>
+      <Reveal as="p" class="engine-check">Motion engine online.</Reveal>
     </div>
   </section>
 
-  <Chapter id="intro" numeral="I" title="Intro" readout="3 sentences">
-    <div class="intro">
-      <div class="frame portrait" style={`aspect-ratio: ${ratio.portrait}`}>
-        <img
-          src={assets.portrait}
-          alt={`${person.name}, portrait`}
-          width="1000"
-          height="1250"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <div class="prose">
-        <p>
-          I am a computer science undergraduate at Amity University Noida, two years into a
-          four-year degree, and I have shipped more production systems than coursework.
-        </p>
-        <p>
-          I work mostly solo, which means I own the schema, the API, the tests and the
-          deploy — and have learned where each of those quietly fails when nobody else is
-          checking.
-        </p>
-        <p>
-          What I am actually interested in is enforcement: making a rule hold at the layer
-          where it cannot be argued with.
-        </p>
-      </div>
-    </div>
-  </Chapter>
+  <section id="achievements" class="screen"></section>
+  <section id="work" class="screen"></section>
+  <section id="about" class="screen"></section>
+  <section id="capabilities" class="screen"></section>
+  <section id="outro" class="screen"></section>
 
-  <Chapter id="work" numeral="II" title="Work" readout={`${projects.length} entries`}>
-    {
-      projects.map((p, i) => (
-        <ProjectRow
-          slug={p.id}
-          title={p.data.title}
-          year={p.data.year}
-          summary={p.data.summary}
-          stack={p.data.stack}
-          index={i}
-        />
-      ))
-    }
-    <p class="all"><a class="u meta" href={withBase('/work')}>all case studies</a></p>
-  </Chapter>
-
-  <Chapter id="build" numeral="III" title="What I build" readout={`${areas.length} areas`}>
-    <!-- A set, not a sequence: unnumbered. No icons, no cards. -->
-    <ul class="areas">
-      {
-        areas.map((a) => (
-          <li>
-            <h3 class="area-title">{a.title}</h3>
-            <hr />
-            <p class="area-body">{a.body}</p>
-          </li>
-        ))
-      }
-    </ul>
-  </Chapter>
-
-  <Chapter id="proof" numeral="IV" title="Proof" readout={`${achievements.length} results`}>
-    <ul class="figures">
-      {achievements.map((a) => <ProofFigure {...a} />)}
-    </ul>
-  </Chapter>
-
-  <!-- Phase 2. Home only — every other route stays at zero client JS. -->
+  <!-- Home only — every other route stays at zero client JS. -->
   <script>
     import '../scripts/motion';
   </script>
 </Base>
 
 <style>
-  .hero {
-    padding-block: clamp(4rem, 16vh, 11rem) clamp(4rem, 12vh, 8rem);
+  .screen {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
   }
-  /* Masks for the rise. The mask has to hug the text: any margin left on the
-     child inflates the wrapper, the translate then no longer clears it, and the
-     line reads as "sitting lower" instead of rising from its rule. Spacing
-     therefore lives on the wrapper, never on the child. The small padding and
-     matching negative margin give descenders somewhere to go. */
-  .rise {
-    overflow: hidden;
-    padding-bottom: 0.12em;
-    margin-bottom: -0.12em;
-  }
-  .rise > * { margin-bottom: 0; }
-  .rise:nth-of-type(1) { margin-bottom: calc(1.5rem - 0.12em); }
 
-  .name {
-    font-size: var(--text-hero);
-    font-weight: 600;
-    letter-spacing: -0.045em;
+  .engine-check {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-muted);
     margin: 0;
-  }
-  .statement {
-    font-size: clamp(1.125rem, 2.4vw, 1.5rem);
-    line-height: 1.45;
-    margin: 0;
-  }
-
-  .ident {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-    gap: 0.5rem 2rem;
-    margin: clamp(3rem, 8vh, 5rem) 0 0;
-    border-top: 1px solid var(--color-rule);
-    padding-top: 1.25rem;
-  }
-  .ident div { display: flex; gap: 0.75rem; }
-  .ident dt { color: var(--color-ink-soft); min-width: 3.25rem; }
-  .ident dd { margin: 0; color: var(--color-ink); }
-
-  .intro { display: grid; gap: 2.5rem; }
-  .portrait { max-width: 20rem; }
-  @media (min-width: 720px) {
-    .intro { grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); gap: clamp(2rem, 4vw, 3.5rem); }
-    .portrait { max-width: none; }
-  }
-
-  .all { margin-top: clamp(3rem, 7vh, 5rem); }
-
-  .areas {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: clamp(2rem, 5vh, 3.25rem) clamp(2rem, 4vw, 4rem);
-  }
-  @media (min-width: 720px) {
-    .areas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  .area-title { font-size: 1.125rem; font-weight: 600; margin: 0 0 0.9rem; }
-  .areas hr { margin-bottom: 0.9rem; }
-  .area-body { margin: 0; font-size: 1rem; max-width: 42ch; }
-
-  .figures {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: clamp(2.5rem, 6vh, 4rem) clamp(2rem, 4vw, 3.5rem);
-  }
-  @media (min-width: 720px) {
-    .figures { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 </style>

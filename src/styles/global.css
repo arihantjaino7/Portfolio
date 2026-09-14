@@ -8,27 +8,42 @@
    Re-copy the files from node_modules with `npm run fonts:sync`. */
 
 /* ─────────────────────────────────────────────────────────────
-   Tokens — six values, no others. See DESIGN.md §2.
+   Tokens — see REDESIGN.md §1. Five values, everything else is opacity:
+   ground, text, muted, rule, accent.
    ───────────────────────────────────────────────────────────── */
 @theme {
-  --color-paper: #edeeea;
-  --color-paper-deep: #e2e3de;
-  --color-ink: #16181a;
-  --color-ink-soft: #5b6067;
-  --color-rule: #cbcdc6;
-  --color-mark: #22389e;
+  --color-ground: #0b0c0e;
+  --color-ground-deep: #16181c;
+  --color-text: #f2f1ed;
+  --color-muted: rgba(242, 241, 237, 0.6);
+  --color-rule: rgba(242, 241, 237, 0.14);
+  --color-accent: #3d5afe;
+
+  /* Back-compat aliases. Chapter.astro, ProjectRow.astro, ProofFigure.astro,
+     ProofArtifact.astro, ArchDiagram.astro, about.astro and the work pages
+     still read the old six-value names directly — they're retired across
+     Phases 2-6, not rewritten here. REDESIGN.md Phase 8 finishes moving
+     every caller onto the names above and drops these. */
+  --color-paper: var(--color-ground);
+  --color-paper-deep: var(--color-ground-deep);
+  --color-ink: var(--color-text);
+  --color-ink-soft: var(--color-muted);
+  --color-mark: var(--color-accent);
 
   --font-sans: "Archivo Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo,
     Consolas, "Liberation Mono", monospace;
 
-  /* Fluid type scale, 360px → 1440px */
-  --text-hero: clamp(2.75rem, 11vw, 7rem);
-  --text-chapter: clamp(1.75rem, 5vw, 3rem);
-  --text-project: clamp(1.5rem, 4vw, 2.5rem);
-  --text-figure: clamp(2rem, 5vw, 4.25rem);
-  --text-body: clamp(1rem, 0.97rem + 0.2vw, 1.125rem);
+  /* Fluid type scale, 360px → 1440px. Display is new — the landing name and
+     the outro line run edge-to-edge. The rest of the scale is pushed larger
+     than the old paper-editorial build to carry a dark, motion-led page. */
+  --text-display: clamp(3rem, 13vw, 11rem);
+  --text-hero: clamp(3rem, 12vw, 8rem);
+  --text-chapter: clamp(2rem, 5.5vw, 3.5rem);
+  --text-project: clamp(1.75rem, 4.5vw, 3rem);
+  --text-figure: clamp(2.25rem, 6vw, 5rem);
+  --text-body: clamp(1rem, 0.97rem + 0.25vw, 1.1875rem);
   --text-meta: 0.8125rem;
 
   --spacing-chapter: clamp(5rem, 12vh, 9rem);
@@ -38,19 +53,19 @@
    Base
    ───────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: light; /* single committed look — DESIGN.md §2 */
+  color-scheme: dark;
   --gutter: clamp(1.25rem, 5vw, 4rem);
   --measure: 66ch;
 }
 
 html {
-  background: var(--color-paper);
+  background: var(--color-ground);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--color-ground);
+  color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--text-body);
   line-height: 1.6;
@@ -185,11 +200,27 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
 .prose a:hover { color: var(--color-mark); }
 
 /* ─────────────────────────────────────────────────────────────
-   Motion — Phase 2. Every rule here is gated on `html.motion`, which
-   src/scripts/motion.ts adds only after it has confirmed the reader has not
-   asked for reduced motion. Without that class this file describes the
-   Phase 1 page exactly.
+   Motion engine — REDESIGN.md §1, Phase 1.
+   src/scripts/motion.ts auto-wires every element below by data attribute
+   alone; no section ever hand-rolls an animation. The rules here define the
+   *hidden* half of each reveal, gated on `(prefers-reduced-motion:
+   no-preference)` rather than a JS-added class — so a reduced-motion reader
+   gets the finished, unhidden layout with zero risk of a class race, and
+   zero GSAP/Lenis ever fetched. motion.ts finds elements already sitting in
+   this state and animates *out* of it; it never has to compute "hidden".
    ───────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal="lines"] .reveal-line-inner {
+    transform: translateY(110%);
+  }
+  [data-reveal="clip"] {
+    clip-path: inset(100% 0 0 0);
+  }
+  [data-reveal="clip"] img,
+  [data-reveal="clip"] video {
+    transform: scale(1.15);
+  }
+}
 
 /* Lenis owns the scroll position while it is running. */
 html.lenis,
@@ -198,88 +229,8 @@ html.lenis.lenis-smooth { scroll-behavior: auto !important; }
 html.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 html.lenis.lenis-stopped { overflow: hidden; }
 
-/* The chapter you are in is inked; the rest recede to --ink-soft. One property.
-   Not --rule: at 1.4:1 the recessed numeral is invisible, which defeats the
-   point of the rail and fails contrast. --ink-soft clears 3:1 and still reads
-   as clearly behind the active one. */
-html.motion .numeral {
-  -webkit-text-stroke-color: var(--color-ink-soft);
-  transition: -webkit-text-stroke-color 420ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-html.motion .chapter.is-active .numeral {
-  -webkit-text-stroke-color: var(--color-ink);
-}
-
-/* ── Hero entrance (Phase 3) ───────────────────────────────────
-   One sweep down the block: three ruled lines rising from their own edges on a
-   70ms stagger. Transform only — no opacity anywhere, which keeps the largest
-   contentful paint honest and stops it reading as the generic fade-up.
-
-   Armed by the inline script on `/` before first paint, so it runs on frame one
-   without waiting for the motion bundle, and completes even if that bundle
-   never loads. `both` fill mode means the end state sticks.
-   ───────────────────────────────────────────────────────────── */
-@keyframes rise {
-  from { transform: translateY(105%); }
-  to { transform: translateY(0); }
-}
-@keyframes draw {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-html.motion-pending .hero .rise > *,
-html.motion-pending .hero .ident > * {
-  animation: rise 820ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-html.motion-pending .hero .rise:nth-of-type(1) > * { animation-delay: 60ms; }
-html.motion-pending .hero .rise:nth-of-type(2) > * { animation-delay: 130ms; }
-html.motion-pending .hero .ident > * { animation-delay: 210ms; }
-
-/* The rule the metadata rises from is drawn rather than simply present. */
-html.motion-pending .hero .ident {
-  border-top-color: transparent;
-  position: relative;
-}
-html.motion-pending .hero .ident::before {
-  content: '';
-  position: absolute;
-  inset: -1px 0 auto 0;
-  height: 1px;
-  background: var(--color-rule);
-  transform-origin: left center;
-  animation: draw 620ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
-}
-/* The metadata columns are masked by the rule they rise from. */
-html.motion-pending .hero .ident > * { overflow: hidden; }
-
-/* Two frames of silence while the motion state classes land — see motion.ts. */
-html.motion-arming *,
-html.motion-arming *::before,
-html.motion-arming *::after {
-  transition: none !important;
-}
-
-/* ── Chapter II: scale-and-settle (Phase 3) ────────────────────
-   Gated on `html.motion`, which motion.ts adds only once it has actually
-   initialised — so a failed bundle leaves the plates at rest and legible
-   rather than stuck mid-reveal.
-   ───────────────────────────────────────────────────────────── */
-html.motion .entry .plate img { transform: scale(1.08); }
-html.motion .entry .plate { border-color: var(--color-rule); }
-html.motion .entry .head,
-html.motion .entry .summary,
-html.motion .entry .stack {
-  color: var(--color-ink-soft);
-  transition: color 500ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-html.motion .entry.is-settled .head,
-html.motion .entry.is-settled .summary { color: var(--color-ink); }
-html.motion .entry.is-settled .stack { color: var(--color-ink-soft); }
-html.motion .entry .plate { transition: border-color 500ms cubic-bezier(0.4, 0, 0.2, 1); }
-html.motion .entry.is-settled .plate { border-color: var(--color-ink-soft); }
-
-/* Phase 1 ships no motion at all. This is the standing guard for Phases 2–3. */
+/* Belt-and-braces: prefers-reduced-motion also kills any transition/animation
+   duration that slipped in outside the gated rules above. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

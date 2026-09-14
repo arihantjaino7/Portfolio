@@ -1,0 +1,45 @@
+---
+/**
+ * Thin wrapper for `[data-reveal="lines"]` — emits the overflow-hidden mask
+ * markup motion.ts's line reveal expects, so no later phase hand-rolls it.
+ *
+ * Pass `lines` for a multi-line reveal (each string gets its own masked line,
+ * staggered together by motion.ts). Without it, the default slot is treated
+ * as a single line.
+ */
+interface Props {
+  lines?: string[];
+  as?: string;
+  class?: string;
+}
+
+const { lines, as: Tag = 'div', class: className } = Astro.props;
+---
+
+<Tag data-reveal="lines" class={className}>
+  {
+    lines ? (
+      lines.map((line: string) => (
+        <span class="reveal-line">
+          <span class="reveal-line-inner">{line}</span>
+        </span>
+      ))
+    ) : (
+      <span class="reveal-line">
+        <span class="reveal-line-inner">
+          <slot />
+        </span>
+      </span>
+    )
+  }
+</Tag>
+
+<style>
+  .reveal-line {
+    display: block;
+    overflow: hidden;
+  }
+  .reveal-line-inner {
+    display: block;
+  }
+</style>

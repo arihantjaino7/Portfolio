@@ -1,42 +1,136 @@
 /**
- * Phase 2 — Lenis smooth scroll and chapter choreography.
+ * Phase 1 — the motion engine core. REDESIGN.md §1, §2.
  *
- * Loaded only on `/`. Every other route still ships zero client JavaScript:
- * case studies and /about are documents, and native scrolling is better for
- * reading a long one than any amount of easing.
+ * Every later phase reaches for exactly four data attributes and never
+ * hand-rolls a scroll animation:
  *
- * What moves, and why (DESIGN.md §5):
- *   1. Wheel scrolling is smoothed — soft, not floaty. Touch is left native.
- *   2. The rail's hairline fills as you traverse a chapter. The rail already
- *      says how much chapter there is ("3 entries"); this makes it say how much
- *      is left. Information, not decoration.
- *   3. The chapter you are in has an inked numeral; the others sit back.
- *      One property, one idea — no fade-up on anything.
- *   4. Chapter II: each plate scales and settles into its frame as it rises,
- *      scrubbed to scroll rather than fired once, so it genuinely settles under
- *      the reader's hand. Its entry inks up as it takes focus.
- *   5. Chapter IV: the figures count up on enter, once.
+ *   [data-reveal="lines"]  a mask reveal for text. Wrap the content in
+ *                          <Reveal> (src/components/Reveal.astro) to get the
+ *                          overflow-hidden line markup; this module finds
+ *                          `.reveal-line-inner` children and rises each one
+ *                          from below its mask, staggered.
+ *   [data-reveal="clip"]   a mask reveal for media. The element itself wipes
+ *                          in via clip-path while its <img>/<video> settles
+ *                          from a counter-scale, so it reads as pulled into
+ *                          place rather than faded.
+ *   [data-parallax]        drifts the element against scroll, scrubbed.
+ *                          Optional attribute value sets the drift amount in
+ *                          percent (default 8): `data-parallax="12"`.
+ *   [data-count]           counts a number up from zero once, on enter.
+ *                          The attribute value is the target: `data-count="12"`.
  *
- * The hero entrance is deliberately NOT here — it is a CSS animation armed
- * before first paint in index.astro, so it starts on frame one and completes
- * even if this module never loads.
+ * The *hidden* half of the two reveal styles lives in global.css, gated on
+ * `(prefers-reduced-motion: no-preference)` rather than a class this module
+ * adds — so a reduced-motion reader always gets the finished static layout,
+ * and GSAP/Lenis are never even requested for them (see schedule() below).
+ * This module only ever animates elements *out* of a state CSS already put
+ * them in; it never decides what "hidden" looks like.
  *
- * `prefers-reduced-motion: reduce` means none of this initialises, and Lenis and
- * GSAP are never even fetched — they load behind a dynamic import so a reader
- * who asked for no motion pays nothing for it. Flipping the setting mid-session
- * tears the whole thing down. The page underneath is the Phase 1 build: the rail
- * holds position with CSS `position: sticky`, so the chapter marker still holds
- * while its content scrolls past, with no JS at all.
+ * Flipping the OS motion setting mid-session tears the whole engine down and,
+ * if the reader turns motion back on, reschedules it from scratch.
  */
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 const root = document.documentElement;
 
+type Gsap = typeof import('gsap').default;
+type ScrollTriggerT = typeof import('gsap/ScrollTrigger').ScrollTrigger;
+
 let teardown: (() => void) | null = null;
 let starting = false;
 
-async function start() {
+// ScrollTrigger only needs to be registered (done once in initMotion) for
+// the `scrollTrigger:` option below to work — these three don't call it
+// directly, unlike wireCounts.
+function wireLineReveals(gsap: Gsap) {
+  document.querySelectorAll<HTMLElement>('[data-reveal="lines"]').forEach((el) => {
+    const lines = el.querySelectorAll<HTMLElement>(':scope .reveal-line-inner');
+    if (!lines.length) return;
+    // `y: 0` is pinned alongside `yPercent` on both ends: global.css's hidden
+    // state is a plain `transform: translateY(110%)`, and the browser reports
+    // that back as an absolute matrix. GSAP decomposes it into its own pixel
+    // `y` cache on first touch, which then composes *additively* with the
+    // `yPercent` this tween drives — without pinning `y`, the element stalls
+    // at that leftover pixel offset even once `yPercent` reaches 0.
+    gsap.fromTo(
+      lines,
+      { yPercent: 110, y: 0 },
+      {
+        yPercent: 0,
+        y: 0,
+        duration: 0.9,
+        ease: 'expo.out',
+        stagger: 0.07,
+        scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+      },
+    );
+  });
+}
+
+function wireClipReveals(gsap: Gsap) {
+  document.querySelectorAll<HTMLElement>('[data-reveal="clip"]').forEach((el) => {
+    const media = el.querySelector<HTMLElement>(':scope > img, :scope > video');
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: el, start: 'top 85%', once: true },
+    });
+    tl.fromTo(
+      el,
+      { clipPath: 'inset(100% 0% 0% 0%)' },
+      { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.9, ease: 'expo.out' },
+      0,
+    );
+    if (media) {
+      tl.fromTo(media, { scale: 1.15 }, { scale: 1, duration: 0.9, ease: 'expo.out' }, 0);
+    }
+  });
+}
+
+function wireParallax(gsap: Gsap) {
+  document.querySelectorAll<HTMLElement>('[data-parallax]').forEach((el) => {
+    const raw = Number(el.dataset.parallax);
+    const amount = Number.isFinite(raw) && raw > 0 ? raw : 8;
+    gsap.fromTo(
+      el,
+      { yPercent: -amount },
+      {
+        yPercent: amount,
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true },
+      },
+    );
+  });
+}
+
+function wireCounts(gsap: Gsap, ScrollTrigger: ScrollTriggerT) {
+  document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
+    const to = Number(el.dataset.count);
+    if (!Number.isFinite(to)) return;
+    ScrollTrigger.create({
+      trigger: el,
+      start: 'top 85%',
+      once: true,
+      onEnter: () => {
+        const counter = { v: 0 };
+        el.textContent = '0';
+        gsap.to(counter, {
+          v: to,
+          duration: 1.1,
+          ease: 'power2.out',
+          onUpdate: () => (el.textContent = String(Math.round(counter.v))),
+          onComplete: () => (el.textContent = String(to)),
+        });
+      },
+    });
+  });
+}
+
+export async function initMotion() {
   if (teardown || starting) return;
   starting = true;
+
+  if (reduce.matches) {
+    starting = false;
+    return;
+  }
 
   const [{ default: Lenis }, { default: gsap }, { ScrollTrigger }] = await Promise.all([
     import('lenis'),
@@ -52,10 +146,9 @@ async function start() {
 
   gsap.registerPlugin(ScrollTrigger);
 
-  // lerp 0.11 settles in roughly 150ms. Lenis' 1.2s duration default is the
-  // floaty one; this tracks the wheel closely enough to read as weight rather
-  // than lag. syncTouch stays off so phones keep native momentum — the primary
-  // audience reads this on a handset, where native is both smoother and cheaper.
+  // lerp 0.11 settles in roughly 150ms — weight, not float. syncTouch stays
+  // off so phones keep native momentum, which is both smoother and cheaper
+  // than simulating it.
   const lenis = new Lenis({
     lerp: 0.11,
     wheelMultiplier: 1,
@@ -63,10 +156,30 @@ async function start() {
     autoRaf: false,
   });
 
+  // Hand ScrollTrigger's scroll position through Lenis rather than reading
+  // native scrollTop directly, so a later phase's ScrollTrigger.scrollTo /
+  // pinning stays in lockstep with Lenis's eased position instead of
+  // fighting it.
+  ScrollTrigger.scrollerProxy(document.documentElement, {
+    scrollTop(value) {
+      if (typeof value === 'number') {
+        lenis.scrollTo(value, { immediate: true });
+        return;
+      }
+      return window.scrollY;
+    },
+    getBoundingClientRect() {
+      return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+    },
+  });
+
   lenis.on('scroll', ScrollTrigger.update);
   const onRaf = (time: number) => lenis.raf(time * 1000);
   gsap.ticker.add(onRaf);
   gsap.ticker.lagSmoothing(0);
+
+  const onRefresh = () => lenis.resize();
+  ScrollTrigger.addEventListener('refresh', onRefresh);
 
   // In-page links have to go through Lenis or they fight it. The skip link is
   // deliberately excluded: it must jump instantly and move focus.
@@ -83,116 +196,31 @@ async function start() {
   document.addEventListener('click', onAnchor);
 
   const ctx = gsap.context(() => {
-    document.querySelectorAll<HTMLElement>('.chapter').forEach((chapter) => {
-      const fill = chapter.querySelector<HTMLElement>('.rail-line-fill');
-      if (fill) {
-        gsap.fromTo(
-          fill,
-          { scaleY: 0 },
-          {
-            scaleY: 1,
-            ease: 'none',
-            // 'top top' / 'bottom bottom' inverts on any chapter shorter than
-            // the viewport — its bottom reaches the viewport bottom before its
-            // top reaches the top. Anchoring inside the viewport keeps the
-            // duration positive at every chapter height and screen size.
-            scrollTrigger: { trigger: chapter, start: 'top 75%', end: 'bottom 25%', scrub: true },
-          },
-        );
-      }
-
-      // The chapter holding the middle of the viewport is the one you are in.
-      // Sections are adjacent, so the hand-off is exact — no gap, no overlap.
-      ScrollTrigger.create({
-        trigger: chapter,
-        start: 'top center',
-        end: 'bottom center',
-        onToggle: (self) => chapter.classList.toggle('is-active', self.isActive),
-      });
-    });
-
-    /* Chapter II — scale and settle, the one committed idea for the work
-       entries. Scrubbed, not fired: the plate settles into its frame as you
-       scroll it up the viewport, which is what separates this from a reveal
-       that plays at you. No opacity, no translate — the generic default is
-       fade-and-slide-up and this is neither. */
-    document.querySelectorAll<HTMLElement>('.entry').forEach((entry) => {
-      const image = entry.querySelector<HTMLElement>('.plate img');
-      if (image) {
-        gsap.fromTo(
-          image,
-          { scale: 1.08 },
-          {
-            scale: 1,
-            ease: 'none',
-            scrollTrigger: { trigger: entry, start: 'top 90%', end: 'top 35%', scrub: true },
-          },
-        );
-      }
-
-      // The entry inks up once it has settled, and stays inked.
-      ScrollTrigger.create({
-        trigger: entry,
-        start: 'top 55%',
-        once: true,
-        onEnter: () => entry.classList.add('is-settled'),
-      });
-    });
-
-    /* Chapter IV — count up on enter, once, never repeating. The finished
-       figure is already in the HTML; this resets to zero only at the moment
-       it starts, so a reader who never reaches Chapter IV sees the real
-       number and nothing ever shows a stale zero. */
-    document.querySelectorAll<HTMLElement>('.figure .value').forEach((el) => {
-      const to = Number(el.dataset.countTo);
-      if (!Number.isFinite(to)) return;
-      const counter = { v: 0 };
-      ScrollTrigger.create({
-        trigger: el,
-        start: 'top 85%',
-        once: true,
-        onEnter: () => {
-          el.textContent = '0';
-          gsap.to(counter, {
-            v: to,
-            duration: 1.1,
-            ease: 'power2.out',
-            onUpdate: () => (el.textContent = String(Math.round(counter.v))),
-            onComplete: () => (el.textContent = String(to)),
-          });
-        },
-      });
-    });
+    wireLineReveals(gsap);
+    wireClipReveals(gsap);
+    wireParallax(gsap);
+    wireCounts(gsap, ScrollTrigger);
   });
 
-  // `html.motion` flips a batch of colour states at once. Those properties carry
-  // transitions, so applying the class would animate every one of them in
-  // unison — a visible shimmer over anything currently on screen. Suppress
-  // transitions for two frames so the initial state is simply the state.
-  root.classList.add('motion', 'motion-arming');
-  requestAnimationFrame(() =>
-    requestAnimationFrame(() => root.classList.remove('motion-arming')),
-  );
+  root.classList.add('motion');
 
   ScrollTrigger.refresh();
   // Webfonts land after first paint and change the height of everything.
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
 
   teardown = () => {
-    // The hero entrance has already finished by any plausible teardown, and its
-    // fill-mode end state is the resting page — dropping the class simply hands
-    // the styles back to the static build.
     root.classList.remove('motion', 'motion-pending');
     document.removeEventListener('click', onAnchor);
+    ScrollTrigger.removeEventListener('refresh', onRefresh);
     gsap.ticker.remove(onRaf);
     ctx.revert();
     lenis.destroy();
-    document
-      .querySelectorAll('.chapter.is-active, .entry.is-settled')
-      .forEach((c) => c.classList.remove('is-active', 'is-settled'));
-    // Counting may have been interrupted mid-tween; restore the real figures.
-    document.querySelectorAll<HTMLElement>('.figure .value').forEach((el) => {
-      if (el.dataset.countTo) el.textContent = el.dataset.countTo;
+    // A reveal or count may have been interrupted mid-tween; ctx.revert()
+    // clears GSAP's inline styles, so the reveal CSS's hidden state in
+    // global.css would otherwise be left showing. Counts need their real
+    // figure restored explicitly since motion.ts, not CSS, owns that text.
+    document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
+      el.textContent = el.dataset.count ?? el.textContent;
     });
   };
   starting = false;
@@ -204,15 +232,15 @@ function stop() {
 }
 
 // Nothing here is needed until the reader scrolls, and GSAP's parse cost
-// competes with first paint if it runs eagerly — it cost 0.6s of LCP when it
-// did. Yield until the main thread is free, with a ceiling so a reader who
-// scrolls immediately is not waiting on an idle callback that never comes.
+// competes with first paint if it runs eagerly. Yield until the main thread
+// is free, with a ceiling so a reader who scrolls immediately isn't waiting
+// on an idle callback that never comes.
 function schedule() {
   if (reduce.matches) return;
   if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => start(), { timeout: 1500 });
+    requestIdleCallback(() => initMotion(), { timeout: 1500 });
   } else {
-    setTimeout(start, 200);
+    setTimeout(initMotion, 200);
   }
 }
 

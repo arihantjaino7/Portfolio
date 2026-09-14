@@ -308,6 +308,13 @@ degrades to a plain mailto where the API is unavailable.
    `src/config/site.ts` and the current pages.
 5. **Phase 5's "filler" is a marquee**, deliberately the quietest thing on the
    page — a sixth loud section would flatten the ones that matter.
+6. **Eight phases, in this order, each ending in its own commit.** Phase 1
+   (foundation — tokens, motion engine, empty shell) is confirmed shipped;
+   Phases 2-8 build the sections and chrome on top of it, one at a time.
+7. **All imagery and backgrounds are designed, not stock or supplied.** The
+   only real asset in this redesign is `public/assets/portrait.jpg`. The
+   landing background, and anything else that reads as an image, is built
+   here — starting with the hand-written WebGL shader in §3 item 2.
 
 ## 4. What I need from you (blocks nothing until the phase runs)
 
