@@ -52,8 +52,13 @@ Wi-Fi. Edits hot-reload on the phone too.
 
 The site is published to **GitHub Pages** at
 <https://arihantjaino7.github.io/Portfolio/> by `.github/workflows/deploy.yml`,
-which runs on every push to `main`. Nothing to do by hand — the workflow enables
-Pages itself on the first run.
+which runs on every push to `main`.
+
+**One-time setup:** in the repository, go to **Settings → Pages → Build and
+deployment** and set **Source** to **GitHub Actions**. This cannot be automated —
+creating a Pages site needs repo-admin scope that `GITHUB_TOKEN` does not have,
+so a workflow trying it fails with *Resource not accessible by integration*.
+After that one click, every push to `main` deploys on its own.
 
 Because a project repo is served from a subdirectory, the build bakes in
 `base: '/Portfolio'`. Every internal link and asset path goes through

@@ -33,11 +33,12 @@ jobs:
           cache: npm
 
       - name: Configure Pages
-        # enablement turns Pages on for the repo if it is not already, so this
-        # does not need a manual visit to repository settings first.
+        # No `enablement: true` here: creating a Pages site needs repo-admin
+        # scope, which GITHUB_TOKEN does not have and a workflow cannot grant
+        # itself — it fails with "Resource not accessible by integration".
+        # Pages has to be switched on once by hand, under
+        # Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - run: npm ci
       - run: npm run build
