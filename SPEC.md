@@ -135,6 +135,6 @@ Produce a short plan first: design tokens (4–6 named hex values), type choices
 ## Deviations from the brief, and why
 
 - **Asset directory for SentinelsAI is `sentinelsai/`, not `sentinels/`.** Media paths derive from the case-study slug so that adding a project stays a one-file change; a second naming scheme would have meant a hand-maintained lookup table. Rename the slug in `src/content/work/sentinelsai.mdx` if you prefer `sentinels`.
-- **Chapter II currently shows two entries, not three.** BhoomiSetu is `draft: true` as instructed, so it is excluded from the build. The rail readout counts published entries, so it says "2 entries" until BhoomiSetu is filled in.
+- **BhoomiSetu was dropped entirely, at Arihant's instruction.** The brief asked for a `draft: true` scaffold; that was later withdrawn in favour of it not existing at all, so the `.mdx` file and its placeholder assets were removed rather than left drafted. Chapter II therefore has two entries, and the rail readout says "2 entries" — it counts published case studies, so it stays correct if a third is ever added.
 - **Repo and live links are empty.** They were not in the brief and are not guessed — a dead link on a recruiter-facing page is worse than an honest absence. Fill `links.repo` / `links.live` in each `.mdx`.
 - **Proof artifact bodies are not supplied.** `56 passing` renders as the headline claim because the brief states it; the raw runner output and the auto-fix diff are yours to paste into `src/proof/`. Inventing them was not an option.

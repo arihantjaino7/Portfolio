@@ -83,7 +83,6 @@ collapses to one column and the rail unfolds into a horizontal band.
 │ │  ┃    ─────────────────────────────────────────────────    │
 │ │  ┃    ...                                                   │
 │ │  ┃                                                          │
-│ │  ┃           (BhoomiSetu — draft: true, does not render)    │
 │ │                                                            │
 │ │  3 entries                                                 │
 │ ╵                                                            │
@@ -163,8 +162,8 @@ numbered and **not** rendered as pills with percentage bars.
 ## 3. Chapter II motion — decided, then reversed
 
 Planned as "the pinned plate"; **shipped as scale-and-settle**. The brief names two
-options and asks for one, committed — the pinned plate was a third thing, and with
-BhoomiSetu still a draft it would have stepped exactly once while halving the page's
+options and asks for one, committed — the pinned plate was a third thing, and with two
+published case studies it would have stepped exactly once while halving the page's
 strongest image. Full reasoning in `DESIGN.md` §5.
 
 What shipped: each plate's image enters at `scale(1.08)` and settles to `scale(1)`

@@ -80,8 +80,6 @@ const media = [
   ['public/assets/arc/shot-02.png', 1920, 1080, 'arc/shot-02.png · 16:9', 'png'],
   ['public/assets/sentinelsai/shot-01.png', 1920, 1080, 'sentinelsai/shot-01.png · 16:9', 'png'],
   ['public/assets/sentinelsai/shot-02.png', 1920, 1080, 'sentinelsai/shot-02.png · 16:9', 'png'],
-  ['public/assets/bhoomisetu/shot-01.png', 1920, 1080, 'bhoomisetu/shot-01.png · 16:9', 'png'],
-  ['public/assets/bhoomisetu/shot-02.png', 1920, 1080, 'bhoomisetu/shot-02.png · 16:9', 'png'],
 ];
 
 /* ── OG cards ───────────────────────────────────────────────────────── */

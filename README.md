@@ -99,7 +99,8 @@ long-form notes rendered at the end. The schema is `src/content.config.ts`; copy
   `src/proof/<slug>/<name>.txt` and reference it as `proof.file`. Until that
   file exists the page renders a labelled frame naming the exact path it wants.
 - `draft: true` keeps a file in the repo and off the site — out of `/`, `/work`,
-  the sitemap, and the build output. `bhoomisetu.mdx` is currently a draft.
+  the sitemap, and the build output. Nothing is currently drafted; both case
+  studies are published.
 
 ## Dropping in real assets
 

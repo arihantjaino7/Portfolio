@@ -145,9 +145,9 @@ Three arguments retired it:
 
 1. **It was not one of the two options.** The instruction was to pick one and commit, not
    to design a third.
-2. **Two entries is not a sequence.** BhoomiSetu is still a draft, so the shared well
-   would step exactly once. That is a great deal of machinery — a second column, tall
-   held blocks, a hand-off — for one transition.
+2. **Two entries is not a sequence.** There are two published case studies, so the shared
+   well would step exactly once. That is a great deal of machinery — a second column, tall
+   held blocks, a hand-off — for a single transition.
 3. **It costs the page its strongest image.** Chapter II is the centre of gravity and the
    brief says give it the most vertical space. A plate confined to a right-hand column is
    roughly half the width of the full-bleed figure the static build already has. Halving
