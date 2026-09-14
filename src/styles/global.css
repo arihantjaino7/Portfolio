@@ -21,7 +21,7 @@
   --color-text: #14151a;
   --color-muted: rgba(20, 21, 26, 0.62);
   --color-rule: rgba(20, 21, 26, 0.14);
-  --color-accent: #3d5afe;
+  --color-accent: #b8734d;
 
   /* Back-compat aliases. Chapter.astro, ProjectRow.astro, ProofFigure.astro,
      ProofArtifact.astro, ArchDiagram.astro, about.astro and the work pages
