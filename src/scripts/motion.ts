@@ -8,7 +8,10 @@
  *                          <Reveal> (src/components/Reveal.astro) to get the
  *                          overflow-hidden line markup; this module finds
  *                          `.reveal-line-inner` children and rises each one
- *                          from below its mask, staggered.
+ *                          from below its mask, staggered. Optional
+ *                          `data-reveal-delay` (seconds) offsets the whole
+ *                          group's start — e.g. a statement settling just
+ *                          after the heading above it.
  *   [data-reveal="clip"]   a mask reveal for media. The element itself wipes
  *                          in via clip-path while its <img>/<video> settles
  *                          from a counter-scale, so it reads as pulled into
@@ -45,6 +48,10 @@ function wireLineReveals(gsap: Gsap) {
   document.querySelectorAll<HTMLElement>('[data-reveal="lines"]').forEach((el) => {
     const lines = el.querySelectorAll<HTMLElement>(':scope .reveal-line-inner');
     if (!lines.length) return;
+    // Optional stagger-group offset — e.g. a statement line that should settle
+    // just after the heading above it, without hand-rolling a one-off tween.
+    const rawDelay = Number(el.dataset.revealDelay);
+    const delay = Number.isFinite(rawDelay) && rawDelay > 0 ? rawDelay : 0;
     // `y: 0` is pinned alongside `yPercent` on both ends: global.css's hidden
     // state is a plain `transform: translateY(110%)`, and the browser reports
     // that back as an absolute matrix. GSAP decomposes it into its own pixel
@@ -60,6 +67,7 @@ function wireLineReveals(gsap: Gsap) {
         duration: 0.9,
         ease: 'expo.out',
         stagger: 0.07,
+        delay,
         scrollTrigger: { trigger: el, start: 'top 88%', once: true },
       },
     );

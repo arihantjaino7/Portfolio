@@ -11,12 +11,14 @@ interface Props {
   lines?: string[];
   as?: string;
   class?: string;
+  /** Seconds to offset this group's start — see motion.ts `data-reveal-delay`. */
+  delay?: number;
 }
 
-const { lines, as: Tag = 'div', class: className } = Astro.props;
+const { lines, as: Tag = 'div', class: className, delay } = Astro.props;
 ---
 
-<Tag data-reveal="lines" class={className}>
+<Tag data-reveal="lines" data-reveal-delay={delay} class={className}>
   {
     lines ? (
       lines.map((line: string) => (

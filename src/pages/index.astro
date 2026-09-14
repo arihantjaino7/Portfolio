@@ -1,15 +1,13 @@
 ---
 /**
- * Phase 1 — foundation shell. REDESIGN.md §1, §2 Phase 1.
- *
- * Six empty full-height sections in the final page order. No section content
- * lands until its own phase (2-6); this phase only proves the motion engine
- * is wired: Lenis + GSAP ScrollTrigger initialise, and the one test element
- * below mask-reveals on load.
+ * S1 landing lands in Phase 2 — REDESIGN.md §1, §2 Phase 2. S2-S6 stay empty
+ * shells (Phase 1) until their own phases build them.
  */
 import Base from '../layouts/Base.astro';
 import Reveal from '../components/Reveal.astro';
+import HeroCanvas from '../components/HeroCanvas.astro';
 import { assets } from '../config/assets';
+import { person } from '../config/site';
 ---
 
 <Base ogImage={assets.og('default')}>
@@ -24,9 +22,18 @@ import { assets } from '../config/assets';
     }
   </script>
 
-  <section id="landing" class="screen">
-    <div class="shell">
-      <Reveal as="p" class="engine-check">Motion engine online.</Reveal>
+  <section id="landing" class="screen landing">
+    <HeroCanvas />
+    <div class="landing-inner shell">
+      <div class="landing-hero">
+        <Reveal as="h1" class="landing-name" lines={[person.name.split(' ')[0], person.name.split(' ').slice(1).join(' ')]} />
+        <Reveal as="p" class="landing-statement" delay={0.12}>{person.statement}</Reveal>
+      </div>
+      <div class="landing-meta">
+        <span class="meta">{person.location}</span>
+        <span class="meta" id="local-time" data-tz="Asia/Kolkata" aria-live="off"></span>
+        <span class="meta landing-scroll" id="scroll-cue">scroll ↓</span>
+      </div>
     </div>
   </section>
 
@@ -35,6 +42,36 @@ import { assets } from '../config/assets';
   <section id="about" class="screen"></section>
   <section id="capabilities" class="screen"></section>
   <section id="outro" class="screen"></section>
+
+  <!--
+    Landing's live clock + one-shot scroll cue: a handful of lines, unrelated
+    to the reveal/parallax/count vocabulary motion.ts generalizes, so it isn't
+    routed through that engine. Independent of prefers-reduced-motion — it
+    updates text and toggles a class, it doesn't animate.
+  -->
+  <script>
+    const timeEl = document.getElementById('local-time');
+    if (timeEl) {
+      const tz = timeEl.dataset.tz ?? 'Asia/Kolkata';
+      const fmt = new Intl.DateTimeFormat('en-IN', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const update = () => (timeEl.textContent = fmt.format(new Date()));
+      update();
+      setInterval(update, 30_000);
+    }
+
+    const cue = document.getElementById('scroll-cue');
+    if (cue) {
+      window.addEventListener('scroll', () => cue.classList.add('is-hidden'), {
+        once: true,
+        passive: true,
+      });
+    }
+  </script>
 
   <!-- Home only — every other route stays at zero client JS. -->
   <script>
@@ -49,10 +86,56 @@ import { assets } from '../config/assets';
     align-items: center;
   }
 
-  .engine-check {
-    font-family: var(--font-mono);
-    font-size: var(--text-meta);
-    color: var(--color-muted);
+  .landing {
+    position: relative;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .landing-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    padding-block: clamp(2rem, 6vh, 4rem);
+  }
+
+  .landing-hero {
+    align-self: center;
+  }
+
+  /* :global — these classes land on <Reveal>'s own root element, which
+     carries Reveal.astro's scope hash rather than this file's, so a plain
+     scoped selector here would silently never match. */
+  .landing-hero :global(.landing-name) {
+    font-size: var(--text-display);
+    font-weight: 600;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
     margin: 0;
+  }
+
+  .landing-hero :global(.landing-statement) {
+    margin: 1.25rem 0 0;
+    max-width: 34ch;
+    color: var(--color-muted);
+    font-size: clamp(1rem, 0.6vw + 0.85rem, 1.25rem);
+  }
+
+  .landing-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .landing-scroll {
+    transition: opacity 500ms ease;
+  }
+
+  .landing-scroll.is-hidden {
+    opacity: 0;
   }
 </style>

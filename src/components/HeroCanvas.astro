@@ -1,0 +1,268 @@
+---
+/**
+ * S1 landing background — REDESIGN.md §2 Phase 2.
+ *
+ * A CSS radial-gradient stack is the *only* thing guaranteed to render: it is
+ * the element's actual background, always present. The <canvas> is an
+ * optional layer painted on top of it. If WebGL2 is unavailable, the shader
+ * fails to compile/link, or the reader has `prefers-reduced-motion: reduce`,
+ * the canvas script simply never runs (or bails before first paint) and the
+ * gradient underneath is indistinguishable from the "finished" state —
+ * there is no blank/black frame to flash.
+ */
+---
+
+<div class="hero-bg" aria-hidden="true">
+  <canvas id="hero-canvas" class="hero-canvas"></canvas>
+</div>
+
+<script>
+  const canvas = document.getElementById('hero-canvas') as HTMLCanvasElement | null;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const section = canvas?.closest('#landing') ?? null;
+
+  // Reduced-motion readers get zero bytes of shader work: bail before a GL
+  // context is even requested.
+  if (canvas && section && !reduce.matches) {
+    initHero(canvas, section as HTMLElement);
+  }
+
+  function initHero(canvas: HTMLCanvasElement, section: HTMLElement) {
+    const gl = canvas.getContext('webgl2', {
+      antialias: false,
+      alpha: false,
+      depth: false,
+      stencil: false,
+      powerPreference: 'low-power',
+    });
+    if (!gl) return; // no WebGL2 — CSS gradient stands as the finished state.
+
+    const vertSrc = `#version 300 es
+      layout(location = 0) in vec2 aPos;
+      void main() {
+        gl_Position = vec4(aPos, 0.0, 1.0);
+      }
+    `;
+
+    // 3-4 octave fBm, warped by its own output, walked through a 3-stop
+    // ink -> deep-blue -> faint-warm gradient, plus a hashed grain and a
+    // vignette. Kept to one pass — no ping-pong buffers.
+    const fragSrc = `#version 300 es
+      precision highp float;
+      uniform vec2 uResolution;
+      uniform float uTime;
+      out vec4 outColor;
+
+      float hash(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        float a = hash(i);
+        float b = hash(i + vec2(1.0, 0.0));
+        float c = hash(i + vec2(0.0, 1.0));
+        float d = hash(i + vec2(1.0, 1.0));
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+      }
+
+      float fbm(vec2 p) {
+        float v = 0.0;
+        float amp = 0.5;
+        for (int i = 0; i < 4; i++) {
+          v += amp * noise(p);
+          p *= 2.02;
+          amp *= 0.5;
+        }
+        return v;
+      }
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / uResolution.xy;
+        vec2 p = uv * 3.0;
+        p.x *= uResolution.x / uResolution.y;
+
+        vec2 warp = vec2(
+          fbm(p + uTime * 0.15),
+          fbm(p + vec2(5.2, 1.3) + uTime * 0.12)
+        );
+        float n = fbm(p + warp * 1.5);
+
+        vec3 ink = vec3(0.043, 0.047, 0.055);
+        vec3 deepBlue = vec3(0.086, 0.122, 0.29);
+        vec3 warm = vec3(0.20, 0.165, 0.185);
+
+        vec3 col = mix(ink, deepBlue, smoothstep(0.18, 0.62, n));
+        col = mix(col, warm, smoothstep(0.55, 0.88, n) * 0.35);
+
+        float grain = hash(gl_FragCoord.xy + uTime * 60.0) - 0.5;
+        col += grain * 0.02;
+
+        float vig = smoothstep(1.05, 0.25, length(uv - 0.5));
+        col *= mix(0.68, 1.0, vig);
+
+        outColor = vec4(col, 1.0);
+      }
+    `;
+
+    function compile(type: number, src: string) {
+      const shader = gl!.createShader(type);
+      if (!shader) return null;
+      gl!.shaderSource(shader, src);
+      gl!.compileShader(shader);
+      if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
+        gl!.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    const vert = compile(gl.VERTEX_SHADER, vertSrc);
+    const frag = compile(gl.FRAGMENT_SHADER, fragSrc);
+    if (!vert || !frag) return;
+
+    const program = gl.createProgram();
+    if (!program) return;
+    gl.attachShader(program, vert);
+    gl.attachShader(program, frag);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
+
+    gl.useProgram(program);
+
+    // Full-viewport triangle — cheaper than a quad, no unused fragments.
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 3, -1, -1, 3]),
+      gl.STATIC_DRAW,
+    );
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+    const uResolution = gl.getUniformLocation(program, 'uResolution');
+    const uTime = gl.getUniformLocation(program, 'uTime');
+
+    // Compiled and linked cleanly — safe to show over the CSS gradient.
+    canvas.classList.add('is-ready');
+
+    const RENDER_SCALE = 0.6;
+    const MAX_DPR = 1.5;
+    let width = 0;
+    let height = 0;
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      width = Math.max(1, Math.round(canvas!.clientWidth * dpr * RENDER_SCALE));
+      height = Math.max(1, Math.round(canvas!.clientHeight * dpr * RENDER_SCALE));
+      if (canvas!.width !== width || canvas!.height !== height) {
+        canvas!.width = width;
+        canvas!.height = height;
+        gl!.viewport(0, 0, width, height);
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+    resize();
+
+    let time = 0;
+    let lastTs = 0;
+    let rafId = 0;
+    let running = false;
+
+    function frame(ts: number) {
+      if (!running) return;
+      const dt = lastTs ? (ts - lastTs) / 1000 : 0;
+      lastTs = ts;
+      // ~0.08 units/sec — it should read as barely moving.
+      time += dt * 0.08;
+
+      gl!.uniform2f(uResolution, width, height);
+      gl!.uniform1f(uTime, time);
+      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function play() {
+      if (running) return;
+      running = true;
+      lastTs = 0;
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function pause() {
+      running = false;
+      cancelAnimationFrame(rafId);
+    }
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && document.visibilityState === 'visible') play();
+        else pause();
+      },
+      { threshold: 0 },
+    );
+    io.observe(section);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && io.takeRecords().length === 0) {
+        // Re-check intersection rather than assuming it's still in view.
+        const rect = section.getBoundingClientRect();
+        const inView = rect.bottom > 0 && rect.top < window.innerHeight;
+        if (inView) play();
+      } else {
+        pause();
+      }
+    });
+
+    reduce.addEventListener('change', () => {
+      if (reduce.matches) {
+        pause();
+        canvas!.classList.remove('is-ready');
+      }
+    });
+  }
+</script>
+
+<style>
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    /* The guaranteed fallback: a static 3-stop radial-gradient stack in the
+       same ink / deep-blue / faint-warm palette as the shader. This is what
+       reduced-motion, no-WebGL2, and shader-compile-failure readers see. */
+    background:
+      radial-gradient(120% 90% at 18% 12%, rgba(51, 41, 47, 0.55), transparent 60%),
+      radial-gradient(140% 110% at 82% 78%, rgba(22, 31, 74, 0.85), transparent 65%),
+      radial-gradient(160% 130% at 50% 100%, rgba(11, 12, 14, 0.9), transparent 70%),
+      var(--color-ground);
+  }
+
+  .hero-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.1s ease;
+  }
+
+  .hero-canvas.is-ready {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-canvas {
+      display: none;
+    }
+  }
+</style>
