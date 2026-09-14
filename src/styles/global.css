@@ -8,15 +8,19 @@
    Re-copy the files from node_modules with `npm run fonts:sync`. */
 
 /* ─────────────────────────────────────────────────────────────
-   Tokens — see REDESIGN.md §1. Five values, everything else is opacity:
-   ground, text, muted, rule, accent.
+   Tokens — see REDESIGN.md §1, revised to a light base per the live
+   reference. Five values, everything else is opacity: ground, text, muted,
+   rule, accent. Sections that want the dark variant (achievements, about,
+   outro) wrap their content in `.dark-panel`, which redeclares the same five
+   custom properties locally — every existing component already reads
+   var(--color-*), so nothing else has to change per-section.
    ───────────────────────────────────────────────────────────── */
 @theme {
-  --color-ground: #0b0c0e;
-  --color-ground-deep: #16181c;
-  --color-text: #f2f1ed;
-  --color-muted: rgba(242, 241, 237, 0.6);
-  --color-rule: rgba(242, 241, 237, 0.14);
+  --color-ground: #f2f1ed;
+  --color-ground-deep: #e6e4dd;
+  --color-text: #14151a;
+  --color-muted: rgba(20, 21, 26, 0.62);
+  --color-rule: rgba(20, 21, 26, 0.14);
   --color-accent: #3d5afe;
 
   /* Back-compat aliases. Chapter.astro, ProjectRow.astro, ProofFigure.astro,
@@ -53,9 +57,24 @@
    Base
    ───────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   --gutter: clamp(1.25rem, 5vw, 4rem);
   --measure: 66ch;
+}
+
+/* Dark sections (achievements, about, outro) — REDESIGN.md's original dark
+   palette, scoped locally rather than globally. Everything inside already
+   reads var(--color-*), so wrapping a section in this class re-themes it
+   with no per-component changes. */
+.dark-panel {
+  --color-ground: #0b0c0e;
+  --color-ground-deep: #16181c;
+  --color-text: #f2f1ed;
+  --color-muted: rgba(242, 241, 237, 0.62);
+  --color-rule: rgba(242, 241, 237, 0.14);
+  color-scheme: dark;
+  background: var(--color-ground);
+  color: var(--color-text);
 }
 
 html {
@@ -90,7 +109,11 @@ p { text-wrap: pretty; }
 a { color: inherit; text-decoration: none; }
 
 a.u {
-  background-image: linear-gradient(var(--color-ink-soft), var(--color-ink-soft));
+  /* var(--color-muted) directly, not the --color-ink-soft alias: Tailwind's
+     @theme bakes `--color-ink-soft: var(--color-muted)` to a static value at
+     build time rather than a live reference, so it doesn't follow
+     .dark-panel's per-section override. --color-muted itself does. */
+  background-image: linear-gradient(var(--color-muted), var(--color-muted));
   background-repeat: no-repeat;
   background-position: 0 100%;
   background-size: 100% 1px;
@@ -151,7 +174,7 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
 .meta {
   font-family: var(--font-mono);
   font-size: var(--text-meta);
-  color: var(--color-ink-soft);
+  color: var(--color-muted);
   letter-spacing: 0;       /* never tracked-out caps — DESIGN.md §3 */
   font-weight: 400;
 }
@@ -159,7 +182,7 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
 /* Framed media: hairline, no radius, no shadow. */
 .frame {
   border: 1px solid var(--color-rule);
-  background: var(--color-paper-deep);
+  background: var(--color-ground-deep);
   overflow: hidden;
 }
 .frame > img,

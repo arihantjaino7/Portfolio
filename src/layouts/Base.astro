@@ -13,6 +13,8 @@ interface Props {
   ogImage?: string;
   ogType?: 'website' | 'article';
   noindex?: boolean;
+  /** The homepage's own #outro section replaces the generic contact footer. */
+  hideFooter?: boolean;
 }
 
 const {
@@ -21,6 +23,7 @@ const {
   ogImage = assets.ogDefault,
   ogType = 'website',
   noindex = false,
+  hideFooter = false,
 } = Astro.props;
 
 const pageTitle = title ? meta.titleTemplate(title) : meta.defaultTitle;
@@ -52,8 +55,8 @@ const personJsonLd = {
 
     <link rel="icon" href={assets.favicon} type="image/svg+xml" />
     <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
-    <meta name="theme-color" content="#0b0c0e" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#f2f1ed" />
+    <meta name="color-scheme" content="light" />
     <meta name="author" content={person.name} />
 
     <link rel="preload" as="font" type="font/woff2" crossorigin
@@ -107,6 +110,6 @@ const personJsonLd = {
     <main id="main" tabindex="-1">
       <slot />
     </main>
-    <SiteFooter />
+    {!hideFooter && <SiteFooter />}
   </body>
 </html>

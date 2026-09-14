@@ -1,16 +1,27 @@
 ---
 /**
- * S1 landing lands in Phase 2 — REDESIGN.md §1, §2 Phase 2. S2-S6 stay empty
- * shells (Phase 1) until their own phases build them.
+ * Homepage — REDESIGN.md §1, §2. All six sections built: S1 landing, S2
+ * achievements (sticky-stacked cards), S3 work (hover-reveal rows), S4 about,
+ * S5 capabilities marquee, S6 outro. The generic engine (Reveal / data-count /
+ * data-parallax / data-stack-item) does the animating; nothing here hand-rolls
+ * a one-off tween.
  */
+import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Reveal from '../components/Reveal.astro';
 import HeroCanvas from '../components/HeroCanvas.astro';
 import { assets } from '../config/assets';
-import { person } from '../config/site';
+import { withBase } from '../config/paths';
+import { person, achievements, skills, links } from '../config/site';
+
+const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const skillItems = skills.flatMap((g) => g.items);
 ---
 
-<Base ogImage={assets.og('default')}>
+<Base ogImage={assets.og('default')} hideFooter>
   <!--
     Armed before first paint. Kept from the previous build: later phases that
     need a load-only entrance (not a scroll-triggered one) key off this class
@@ -22,11 +33,16 @@ import { person } from '../config/site';
     }
   </script>
 
+  <!-- S1 — landing -->
   <section id="landing" class="screen landing">
     <HeroCanvas />
     <div class="landing-inner shell">
       <div class="landing-hero">
-        <Reveal as="h1" class="landing-name" lines={[person.name.split(' ')[0], person.name.split(' ').slice(1).join(' ')]} />
+        <Reveal
+          as="h1"
+          class="landing-name"
+          lines={[person.name.split(' ')[0], person.name.split(' ').slice(1).join(' ')]}
+        />
         <Reveal as="p" class="landing-statement" delay={0.12}>{person.statement}</Reveal>
       </div>
       <div class="landing-meta">
@@ -37,38 +53,178 @@ import { person } from '../config/site';
     </div>
   </section>
 
-  <section id="achievements" class="screen"></section>
-  <section id="work" class="screen"></section>
-  <section id="about" class="screen"></section>
-  <section id="capabilities" class="screen"></section>
-  <section id="outro" class="screen"></section>
+  <!-- S2 — achievements, sticky-stacked -->
+  <section id="achievements" class="dark-panel achievements">
+    <div class="shell achievements-head">
+      <Reveal as="h2" class="section-title" lines={['Achievements']} />
+      <span class="meta">({String(achievements.length).padStart(2, '0')})</span>
+    </div>
+    <div class="stack">
+      {
+        achievements.map((a, i) => (
+          <article class="stack-card" data-stack-item>
+            <div class="shell stack-inner">
+              <span class="meta stack-idx">{String(i + 1).padStart(2, '0')}.</span>
+              <p class="figure">{a.prefix}<span data-count={a.value}>{a.value}</span>{a.suffix}</p>
+              <h3 class="event">{a.event}</h3>
+              <p class="detail meta">
+                {a.detail} — {a.year}
+              </p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- S3 — work -->
+  <section id="work" class="work-section">
+    <div class="shell">
+      <div class="work-head">
+        <Reveal as="h2" class="section-title" lines={['Work']} />
+        <span class="meta">{String(projects.length).padStart(2, '0')} case studies</span>
+      </div>
+      <ol class="project-rows">
+        {
+          projects.map((p, i) => (
+            <li>
+              <a class="project-row" href={withBase(`/work/${p.id}`)}>
+                <span class="meta idx">{String(i + 1).padStart(2, '0')}</span>
+                <span class="project-thumb frame" aria-hidden="true">
+                  <img
+                    src={assets.project(p.id).shot1}
+                    alt=""
+                    width="640"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </span>
+                <span class="project-title">{p.data.title}</span>
+                <span class="project-row-meta meta">
+                  <span class="project-view">View case →</span>
+                  <span>{p.data.year}</span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+      <a class="meta u all-work" href={withBase('/work')}>All work →</a>
+    </div>
+  </section>
+
+  <!-- S4 — about -->
+  <section id="about" class="screen dark-panel about-section">
+    <div class="shell about-grid">
+      <div class="about-portrait frame" data-reveal="clip">
+        <img
+          src={assets.portrait}
+          alt={`${person.name}, portrait`}
+          width="480"
+          height="480"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      <div class="about-copy">
+        <Reveal as="p" class="about-kicker" lines={['Hey —']} />
+        <Reveal as="h2" class="about-name" lines={[`I'm ${person.name}.`]} delay={0.08} />
+        <Reveal as="p" class="about-statement" delay={0.16}>{person.statement}</Reveal>
+        <div class="about-row">
+          <span class="tag meta">About me</span>
+          <a class="meta u" href={withBase('/about')}>More about me →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S5 — capabilities marquee -->
+  <section id="capabilities" class="capabilities-section" aria-hidden="true">
+    <div class="marquee-row">
+      <div class="marquee-track marquee-left">
+        {[...skillItems, ...skillItems].map((s) => <span class="meta">{s}</span>)}
+      </div>
+    </div>
+    <div class="marquee-row">
+      <div class="marquee-track marquee-right">
+        {[...skillItems, ...skillItems].map((s) => <span class="meta">{s}</span>)}
+      </div>
+    </div>
+  </section>
+
+  <!-- S6 — outro -->
+  <section id="outro" class="screen dark-panel outro">
+    <div class="shell outro-inner">
+      <Reveal as="p" class="outro-line" lines={["Let's build", 'something.']} />
+      <a
+        id="outro-email"
+        class="outro-email"
+        href={links.email}
+        data-email={person.email}
+      >
+        {person.email}
+      </a>
+      <ul class="outro-links">
+        <li><a class="meta u" href={links.github} rel="me noopener">GitHub ↗</a></li>
+        <li><a class="meta u" href={links.linkedin} rel="me noopener">LinkedIn ↗</a></li>
+        <li><a class="meta u" href={links.email}>Email ↗</a></li>
+      </ul>
+      <div class="outro-footer meta">
+        <span>© {new Date().getFullYear()} {person.name}</span>
+        <span>
+          {person.location} — <span id="outro-time" data-tz="Asia/Kolkata"></span>
+        </span>
+        <a class="u" href="#landing">Back to top ↑</a>
+      </div>
+    </div>
+  </section>
 
   <!--
-    Landing's live clock + one-shot scroll cue: a handful of lines, unrelated
-    to the reveal/parallax/count vocabulary motion.ts generalizes, so it isn't
-    routed through that engine. Independent of prefers-reduced-motion — it
-    updates text and toggles a class, it doesn't animate.
+    A handful of page-specific bits — a live clock (×2), a one-shot scroll
+    cue, click-to-copy email — unrelated to the reveal/parallax/count/stack
+    vocabulary motion.ts generalizes, so they aren't routed through that
+    engine. Independent of prefers-reduced-motion: they update text and
+    toggle classes, they don't animate. The mailto href is real from the
+    start, so copy-to-clipboard is a progressive enhancement, not the only
+    path — email still works with this script absent.
   -->
   <script>
-    const timeEl = document.getElementById('local-time');
-    if (timeEl) {
-      const tz = timeEl.dataset.tz ?? 'Asia/Kolkata';
+    function liveClock(el: HTMLElement) {
+      const tz = el.dataset.tz ?? 'Asia/Kolkata';
       const fmt = new Intl.DateTimeFormat('en-IN', {
         timeZone: tz,
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       });
-      const update = () => (timeEl.textContent = fmt.format(new Date()));
+      const update = () => (el.textContent = fmt.format(new Date()));
       update();
       setInterval(update, 30_000);
     }
+    document
+      .querySelectorAll<HTMLElement>('#local-time, #outro-time')
+      .forEach(liveClock);
 
     const cue = document.getElementById('scroll-cue');
     if (cue) {
       window.addEventListener('scroll', () => cue.classList.add('is-hidden'), {
         once: true,
         passive: true,
+      });
+    }
+
+    const emailLink = document.getElementById('outro-email');
+    if (emailLink && navigator.clipboard) {
+      emailLink.addEventListener('click', (e) => {
+        const address = emailLink.dataset.email;
+        if (!address) return;
+        e.preventDefault();
+        navigator.clipboard.writeText(address).then(() => {
+          const original = emailLink.textContent;
+          emailLink.textContent = 'copied';
+          setTimeout(() => (emailLink.textContent = original), 1500);
+        });
       });
     }
   </script>
@@ -86,6 +242,7 @@ import { person } from '../config/site';
     align-items: center;
   }
 
+  /* ── S1 landing ─────────────────────────────────────────────── */
   .landing {
     position: relative;
     align-items: stretch;
@@ -107,7 +264,8 @@ import { person } from '../config/site';
 
   /* :global — these classes land on <Reveal>'s own root element, which
      carries Reveal.astro's scope hash rather than this file's, so a plain
-     scoped selector here would silently never match. */
+     scoped selector here would silently never match. Same story everywhere
+     else below that styles a class passed into <Reveal>. */
   .landing-hero :global(.landing-name) {
     font-size: var(--text-display);
     font-weight: 600;
@@ -137,5 +295,307 @@ import { person } from '../config/site';
 
   .landing-scroll.is-hidden {
     opacity: 0;
+  }
+
+  /* ── shared section heading ─────────────────────────────────── */
+  :global(.section-title) {
+    font-size: var(--text-chapter);
+    font-weight: 600;
+    margin: 0;
+  }
+
+  /* ── S2 achievements — sticky stack ─────────────────────────── */
+  .achievements-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-block: clamp(3rem, 10vh, 5.5rem);
+  }
+
+  .stack {
+    position: relative;
+  }
+
+  .stack-card {
+    position: sticky;
+    top: 0;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    background: var(--color-ground);
+    border-top: 1px solid var(--color-rule);
+  }
+
+  .stack-inner {
+    width: 100%;
+  }
+
+  .stack-idx {
+    display: block;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+  }
+
+  .figure {
+    font-family: var(--font-mono);
+    font-size: var(--text-figure);
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+  }
+
+  .event {
+    font-size: var(--text-project);
+    font-weight: 500;
+    margin: 0 0 0.75rem;
+  }
+
+  .detail {
+    margin: 0;
+    max-width: 40ch;
+  }
+
+  /* ── S3 work ─────────────────────────────────────────────────── */
+  .work-section {
+    padding-block: clamp(3rem, 10vh, 6rem);
+  }
+
+  .work-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: clamp(1.5rem, 4vh, 3rem);
+  }
+
+  .project-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .project-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-block: clamp(1.5rem, 4vh, 2.25rem);
+    border-top: 1px solid var(--color-rule);
+    color: inherit;
+  }
+
+  .project-row .idx {
+    flex-shrink: 0;
+    width: 2rem;
+  }
+
+  .project-rows li:last-child .project-row {
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .project-title {
+    font-size: var(--text-project);
+    font-weight: 500;
+    transition: transform 400ms ease;
+  }
+
+  .project-row-meta {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .project-view {
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+
+  .project-thumb {
+    position: absolute;
+    left: 4.5rem;
+    width: 8rem;
+    aspect-ratio: 16 / 9;
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 350ms ease, transform 350ms ease;
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .project-row:hover .project-thumb,
+    .project-row:focus-visible .project-thumb {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .project-row:hover .project-title,
+    .project-row:focus-visible .project-title {
+      transform: translateX(9.5rem);
+    }
+    .project-row:hover .project-view,
+    .project-row:focus-visible .project-view {
+      opacity: 1;
+    }
+  }
+
+  .all-work {
+    display: inline-block;
+    margin-top: clamp(2rem, 5vh, 3rem);
+  }
+
+  /* ── S4 about ────────────────────────────────────────────────── */
+  .about-grid {
+    display: grid;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  @media (min-width: 800px) {
+    .about-grid {
+      grid-template-columns: auto 1fr;
+      gap: 3.5rem;
+    }
+  }
+
+  .about-portrait {
+    width: 9rem;
+    aspect-ratio: 1 / 1;
+  }
+
+  .about-portrait img {
+    object-fit: cover;
+  }
+
+  .about-copy :global(.about-kicker) {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-accent);
+    margin: 0 0 0.5rem;
+  }
+
+  .about-copy :global(.about-name) {
+    font-size: var(--text-hero);
+    font-weight: 600;
+    line-height: 0.98;
+    margin: 0;
+  }
+
+  .about-copy :global(.about-statement) {
+    margin: 1.25rem 0 0;
+    max-width: 42ch;
+    color: var(--color-muted);
+  }
+
+  .about-row {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  .tag {
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--color-rule);
+    border-radius: 0.25rem;
+  }
+
+  /* ── S5 capabilities marquee ─────────────────────────────────── */
+  .capabilities-section {
+    border-block: 1px solid var(--color-rule);
+    padding-block: clamp(2rem, 6vh, 3rem);
+    overflow: hidden;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .marquee-row {
+    overflow: hidden;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    gap: 2.5rem;
+    color: var(--color-muted);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .marquee-left {
+      animation: marquee-left 40s linear infinite;
+    }
+    .marquee-right {
+      animation: marquee-right 40s linear infinite;
+    }
+  }
+
+  @keyframes marquee-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @keyframes marquee-right {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+
+  /* ── S6 outro ────────────────────────────────────────────────── */
+  .outro {
+    align-items: stretch;
+  }
+
+  .outro-inner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(1.5rem, 4vh, 2.5rem);
+    padding-block: clamp(3rem, 10vh, 5rem);
+    min-height: 100%;
+  }
+
+  .outro :global(.outro-line) {
+    font-size: var(--text-hero);
+    font-weight: 600;
+    line-height: 0.98;
+    margin: 0;
+  }
+
+  .outro-email {
+    display: inline-block;
+    width: fit-content;
+    font-family: var(--font-mono);
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    background-image: linear-gradient(var(--color-muted), var(--color-muted));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 1px;
+    padding-bottom: 0.2em;
+    transition: background-size 200ms ease, background-image 200ms ease, color 200ms ease;
+  }
+
+  .outro-email:hover,
+  .outro-email:focus-visible {
+    background-image: linear-gradient(var(--color-accent), var(--color-accent));
+    background-size: 100% 2px;
+    color: var(--color-accent);
+  }
+
+  .outro-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .outro-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
+    justify-content: space-between;
+    border-top: 1px solid var(--color-rule);
+    padding-top: 1.5rem;
+    margin-top: clamp(2rem, 6vh, 3rem);
   }
 </style>

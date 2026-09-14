@@ -19,8 +19,22 @@
  *   [data-parallax]        drifts the element against scroll, scrubbed.
  *                          Optional attribute value sets the drift amount in
  *                          percent (default 8): `data-parallax="12"`.
- *   [data-count]           counts a number up from zero once, on enter.
- *                          The attribute value is the target: `data-count="12"`.
+ *   [data-count]           counts a number up from zero once, on enter. The
+ *                          attribute value is the target: `data-count="12"`.
+ *                          The element's static content must already be that
+ *                          same final number (`<span data-count="12">12</span>`),
+ *                          never a literal "0" — this module zeroes it itself
+ *                          right before animating up. A reduced-motion reader
+ *                          (or a crawler, or this bundle failing to load) gets
+ *                          no JS at all, so the static content is the only
+ *                          thing they ever see.
+ *   [data-stack-item]      one card in a CSS `position: sticky` stack (each
+ *                          card is already sticky-to-top in global.css, which
+ *                          gives the "next one covers, previous peeks
+ *                          underneath" layering for free with zero JS). This
+ *                          module only adds the shrink/fade on the card
+ *                          being covered, scrubbed between its own pin and
+ *                          its next sibling's arrival.
  *
  * The *hidden* half of the two reveal styles lives in global.css, gated on
  * `(prefers-reduced-motion: no-preference)` rather than a class this module
@@ -103,6 +117,29 @@ function wireParallax(gsap: Gsap) {
         yPercent: amount,
         ease: 'none',
         scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true },
+      },
+    );
+  });
+}
+
+function wireStacks(gsap: Gsap) {
+  document.querySelectorAll<HTMLElement>('[data-stack-item]').forEach((item) => {
+    const next = item.nextElementSibling as HTMLElement | null;
+    if (!next || !next.hasAttribute('data-stack-item')) return;
+    gsap.fromTo(
+      item,
+      { scale: 1, opacity: 1 },
+      {
+        scale: 0.92,
+        opacity: 0.45,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: item,
+          start: 'top top',
+          endTrigger: next,
+          end: 'top top',
+          scrub: true,
+        },
       },
     );
   });
@@ -207,6 +244,7 @@ export async function initMotion() {
     wireLineReveals(gsap);
     wireClipReveals(gsap);
     wireParallax(gsap);
+    wireStacks(gsap);
     wireCounts(gsap, ScrollTrigger);
   });
 
