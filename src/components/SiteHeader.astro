@@ -2,7 +2,10 @@
 import { person, nav, links } from '../config/site';
 import { withBase } from '../config/paths';
 const path = Astro.url.pathname;
-const isHome = path === '/';
+// The site deploys under /Portfolio, so home is that base with no trailing
+// slash — never bare '/'. Same BASE_URL normalization as paths.ts.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const isHome = path.replace(/\/$/, '') === base;
 ---
 
 <header class="border-b border-rule">
