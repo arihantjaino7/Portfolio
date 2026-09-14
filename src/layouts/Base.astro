@@ -1,0 +1,89 @@
+---
+import '../styles/global.css';
+import { meta, person, links } from '../config/site';
+import { assets } from '../config/assets';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Absolute-from-root path, e.g. "/assets/og/arc.png" */
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = meta.description,
+  ogImage = assets.ogDefault,
+  ogType = 'website',
+  noindex = false,
+} = Astro.props;
+
+const pageTitle = title ? meta.titleTemplate(title) : meta.defaultTitle;
+const canonical = new URL(Astro.url.pathname.replace(/\/$/, '') || '/', Astro.site);
+const ogUrl = new URL(ogImage, Astro.site);
+
+const personJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: person.name,
+  url: Astro.site?.toString(),
+  email: `mailto:${person.email}`,
+  jobTitle: 'Software engineer',
+  description: person.statement,
+  alumniOf: { '@type': 'CollegeOrUniversity', name: person.school },
+  sameAs: [links.github, links.linkedin, links.x],
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <link rel="icon" href={assets.favicon} type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="theme-color" content="#edeeea" />
+    <meta name="color-scheme" content="light" />
+    <meta name="author" content={person.name} />
+
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="/fonts/archivo-latin-wght-normal.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="/fonts/jetbrains-mono-latin-wght-normal.woff2" />
+
+    <meta property="og:site_name" content={person.name} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={meta.locale} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogUrl} />
+    <meta name="twitter:creator" content={meta.twitterHandle} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(personJsonLd)} is:inline />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <SiteHeader />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

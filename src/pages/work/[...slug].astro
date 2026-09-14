@@ -1,0 +1,268 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ArchDiagram from '../../components/ArchDiagram.astro';
+import ProofArtifact from '../../components/ProofArtifact.astro';
+import { assets } from '../../config/assets';
+
+export async function getStaticPaths() {
+  const entries = (await getCollection('work', ({ data }) => !data.draft)).sort(
+    (a, b) => a.data.order - b.data.order,
+  );
+  return entries.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: {
+      entry,
+      prev: entries[i - 1] ?? null,
+      next: entries[i + 1] ?? null,
+    },
+  }));
+}
+
+const { entry, prev, next } = Astro.props;
+const d = entry.data;
+const { Content } = await render(entry);
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+
+// The spine. Steps appear only when the frontmatter supplies them, and the
+// numerals renumber themselves — so a case study without a diagram is still
+// a correctly numbered sequence.
+const steps = [
+  { id: 'problem', label: 'Problem' },
+  d.diagram && { id: 'architecture', label: 'Architecture' },
+  d.decision && { id: 'decision', label: 'Decision' },
+  d.proof && { id: 'proof', label: 'Proof' },
+  { id: 'stack', label: 'Stack' },
+  { id: 'links', label: 'Links' },
+].filter(Boolean) as { id: string; label: string }[];
+
+const n = (id: string) => ROMAN[steps.findIndex((s) => s.id === id)];
+const hasLinks = Boolean(d.links.repo || d.links.live);
+---
+
+<Base
+  title={d.title}
+  description={d.summary}
+  ogImage={assets.project(entry.id).og}
+  ogType="article"
+>
+  <article class="shell page">
+    <header class="head">
+      <p class="meta breadcrumb"><a class="u" href="/work">work</a> / {entry.id}</p>
+      <h1 class="title">{d.title}</h1>
+      <p class="summary measure">{d.summary}</p>
+      <dl class="credits meta">
+        <div><dt>role</dt><dd>{d.role.toLowerCase()}</dd></div>
+        {d.team && <div><dt>team</dt><dd>{d.team.toLowerCase()}</dd></div>}
+        <div><dt>year</dt><dd>{d.year}</dd></div>
+      </dl>
+    </header>
+
+    <div class="grid-rail spine">
+      <nav class="rail" aria-label="Case study contents">
+        <ol class="toc meta">
+          {
+            steps.map((s, i) => (
+              <li>
+                <span class="num" aria-hidden="true">{ROMAN[i]}</span>
+                <a class="u" href={`#${s.id}`}>{s.label.toLowerCase()}</a>
+              </li>
+            ))
+          }
+        </ol>
+      </nav>
+
+      <div class="rail-body">
+        <section id="problem" class="step">
+          <h2 class="step-title"><span class="step-num">{n('problem')}</span> Problem</h2>
+          <p class="lede measure">{d.problem}</p>
+        </section>
+
+        {
+          d.diagram && (
+            <section id="architecture" class="step">
+              <h2 class="step-title"><span class="step-num">{n('architecture')}</span> Architecture</h2>
+              <ArchDiagram
+                title={d.title}
+                caption={d.diagram.caption}
+                svg={d.diagram.svg}
+                layers={d.diagram.layers}
+              />
+            </section>
+          )
+        }
+
+        {
+          d.decision && (
+            <section id="decision" class="step">
+              <h2 class="step-title"><span class="step-num">{n('decision')}</span> Decision</h2>
+              <p class="question">{d.decision.question}</p>
+              <dl class="choice">
+                <div class="chose">
+                  <dt class="meta">chose</dt>
+                  <dd>{d.decision.chose}</dd>
+                </div>
+                <div class="rejected">
+                  <dt class="meta">rejected</dt>
+                  <dd>
+                    <ul>{d.decision.rejected.map((r) => <li>{r}</li>)}</ul>
+                  </dd>
+                </div>
+              </dl>
+              <div class="prose why"><p>{d.decision.why}</p></div>
+            </section>
+          )
+        }
+
+        {
+          d.proof && (
+            <section id="proof" class="step">
+              <h2 class="step-title"><span class="step-num">{n('proof')}</span> Proof</h2>
+              <ProofArtifact
+                kind={d.proof.kind}
+                summary={d.proof.summary}
+                caption={d.proof.caption}
+                file={d.proof.file}
+                slug={entry.id}
+              />
+            </section>
+          )
+        }
+
+        <section id="stack" class="step">
+          <h2 class="step-title"><span class="step-num">{n('stack')}</span> Stack</h2>
+          <ul class="stack meta">{d.stack.map((s) => <li>{s.toLowerCase()}</li>)}</ul>
+        </section>
+
+        <section id="links" class="step">
+          <h2 class="step-title"><span class="step-num">{n('links')}</span> Links</h2>
+          {
+            hasLinks ? (
+              <ul class="links meta">
+                {d.links.repo && <li><a class="u" href={d.links.repo} rel="noopener">repository</a></li>}
+                {d.links.live && <li><a class="u" href={d.links.live} rel="noopener">live</a></li>}
+              </ul>
+            ) : (
+              <p class="meta">Links not published yet.</p>
+            )
+          }
+        </section>
+
+        <div class="prose notes">
+          <h2 class="notes-title meta">notes</h2>
+          <Content />
+        </div>
+
+        <nav class="pager meta" aria-label="More case studies">
+          {
+            prev ? (
+              <a class="pager-link" href={`/work/${prev.id}`}>
+                <span class="pager-dir">previous</span>
+                <span class="u pager-name">{prev.data.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next ? (
+              <a class="pager-link next" href={`/work/${next.id}`}>
+                <span class="pager-dir">next</span>
+                <span class="u pager-name">{next.data.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+        </nav>
+      </div>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .page { padding-block: clamp(3.5rem, 10vh, 6rem) clamp(3rem, 8vh, 5rem); }
+
+  .breadcrumb { margin: 0 0 1.5rem; }
+  .title { font-size: var(--text-chapter); margin-bottom: 1rem; }
+  .summary { font-size: clamp(1.0625rem, 2vw, 1.3125rem); line-height: 1.45; margin: 0; }
+
+  .credits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 2rem;
+    margin: 2rem 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-rule);
+  }
+  .credits div { display: flex; gap: 0.75rem; }
+  .credits dt { color: var(--color-ink-soft); min-width: 2.75rem; }
+  .credits dd { margin: 0; color: var(--color-ink); }
+
+  .spine { margin-top: clamp(3rem, 8vh, 5rem); }
+
+  .toc { list-style: none; padding: 0; margin: 0 0 2.5rem; }
+  .toc li { display: flex; gap: 0.85rem; padding-block: 0.3rem; }
+  .toc .num { color: var(--color-ink-soft); min-width: 1.75rem; }
+  @media (min-width: 900px) {
+    .rail { position: sticky; top: clamp(3rem, 12vh, 6rem); align-self: start; }
+    .toc { margin-bottom: 0; }
+  }
+
+  .step { padding-block: 0 clamp(3rem, 8vh, 5rem); }
+  .step-title {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  .step-num {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 0.8125rem;
+    color: var(--color-ink-soft);
+    min-width: 1.75rem;
+  }
+
+  .lede { font-size: 1.0625rem; margin: 0; }
+
+  .question {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+    max-width: var(--measure);
+  }
+  .choice { display: grid; gap: 1.25rem; margin: 0 0 1.75rem; max-width: var(--measure); }
+  @media (min-width: 720px) { .choice { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .choice > div { border-top: 1px solid var(--color-rule); padding-top: 0.85rem; }
+  .choice dt { margin-bottom: 0.5rem; }
+  .choice dd { margin: 0; font-size: 1rem; }
+  .chose dd { color: var(--color-mark); font-weight: 500; }
+  .rejected ul { list-style: none; padding: 0; margin: 0; }
+  .rejected li { color: var(--color-ink-soft); }
+  .rejected li + li { margin-top: 0.4rem; }
+  .why { font-size: 1rem; }
+
+  .stack, .links { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+  .stack li, .links li { color: var(--color-ink); }
+
+  .notes { border-top: 1px solid var(--color-rule); padding-top: 2rem; font-size: 1rem; }
+  .notes-title { margin: 0 0 1rem; font-weight: 400; }
+
+  /* No arrows appended to link text — DESIGN.md §3. Direction is a label. */
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-top: clamp(3rem, 8vh, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-rule);
+  }
+  .pager-link { display: grid; gap: 0.35rem; }
+  .pager-link.next { text-align: right; justify-items: end; }
+  .pager-dir { color: var(--color-ink-soft); }
+  .pager-name { color: var(--color-ink); font-size: 0.9375rem; }
+</style>

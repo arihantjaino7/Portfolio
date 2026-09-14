@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not found" description="That page does not exist." noindex>
+  <div class="shell page">
+    <p class="meta">404</p>
+    <h1 class="title">That page does not exist.</h1>
+    <p class="meta">
+      Try <a class="u" href="/">home</a>, <a class="u" href="/work">work</a>, or
+      <a class="u" href="/about">about</a>.
+    </p>
+  </div>
+</Base>
+
+<style>
+  .page { padding-block: clamp(5rem, 22vh, 12rem); }
+  .title { font-size: var(--text-chapter); margin: 1rem 0 1.5rem; }
+</style>

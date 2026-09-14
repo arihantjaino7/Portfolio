@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   Typefaces — see DESIGN.md §3
+   Archivo  : everything a person wrote (prose)
+   JetBrains: everything structural (numerals, labels, output)
+   Latin subset, variable weight axis. Two files, ~75kb total.
+   Re-copy from node_modules with `npm run fonts:sync`.
+   ───────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Archivo Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/fonts/archivo-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Tokens — six values, no others. See DESIGN.md §2.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --color-paper: #edeeea;
+  --color-paper-deep: #e2e3de;
+  --color-ink: #16181a;
+  --color-ink-soft: #5b6067;
+  --color-rule: #cbcdc6;
+  --color-mark: #22389e;
+
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, "Liberation Mono", monospace;
+
+  /* Fluid type scale, 360px → 1440px */
+  --text-hero: clamp(2.75rem, 11vw, 7rem);
+  --text-chapter: clamp(1.75rem, 5vw, 3rem);
+  --text-project: clamp(1.5rem, 4vw, 2.5rem);
+  --text-figure: clamp(2rem, 5vw, 4.25rem);
+  --text-body: clamp(1rem, 0.97rem + 0.2vw, 1.125rem);
+  --text-meta: 0.8125rem;
+
+  --spacing-chapter: clamp(5rem, 12vh, 9rem);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light; /* single committed look — DESIGN.md §2 */
+  --gutter: clamp(1.25rem, 5vw, 4rem);
+  --measure: 66ch;
+}
+
+html {
+  background: var(--color-paper);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  font-weight: 600;
+  margin: 0;
+}
+
+p { text-wrap: pretty; }
+
+/* Links: the text is the link. No appended arrows — DESIGN.md §3. */
+a { color: inherit; text-decoration: none; }
+
+a.u {
+  background-image: linear-gradient(var(--color-ink-soft), var(--color-ink-soft));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 1px;
+  padding-bottom: 0.12em;
+  transition: background-size 160ms ease, background-image 160ms ease, color 160ms ease;
+}
+a.u:hover,
+a.u:focus-visible {
+  background-image: linear-gradient(var(--color-mark), var(--color-mark));
+  background-size: 100% 2px;
+  color: var(--color-mark);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-mark);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+::selection { background: var(--color-mark); color: var(--color-paper); }
+
+img, video, svg { max-width: 100%; height: auto; display: block; }
+
+hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
+
+/* ─────────────────────────────────────────────────────────────
+   Layout primitives
+   ───────────────────────────────────────────────────────────── */
+.shell {
+  width: 100%;
+  max-width: 84rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* 12-track grid; rail takes 1–2, content 3–11. See PLAN.md §2. */
+.grid-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+/* Without this, a scroll container's min-width propagates up and widens the page. */
+.grid-rail > * { min-width: 0; }
+@media (min-width: 900px) {
+  .grid-rail {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: clamp(1.5rem, 3vw, 3rem);
+  }
+  .grid-rail > .rail { grid-column: 1 / 3; }
+  .grid-rail > .rail-body { grid-column: 3 / 12; }
+  /* /about: the portrait is content, not an annotation, so it gets real width. */
+  .grid-rail.wide-rail > .rail { grid-column: 1 / 5; }
+  .grid-rail.wide-rail > .rail-body { grid-column: 6 / 13; }
+}
+
+.measure { max-width: var(--measure); }
+
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--color-ink-soft);
+  letter-spacing: 0;       /* never tracked-out caps — DESIGN.md §3 */
+  font-weight: 400;
+}
+
+/* Framed media: hairline, no radius, no shadow. */
+.frame {
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-deep);
+  overflow: hidden;
+}
+.frame > img,
+.frame > video { width: 100%; height: 100%; object-fit: cover; }
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 0.75rem 1rem;
+  z-index: 50;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+.skip:focus { left: 0; }
+
+/* Long-form prose inside MDX bodies and case-study sections. */
+.prose { max-width: var(--measure); }
+.prose > * + * { margin-top: 1.15em; }
+.prose strong { font-weight: 600; }
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--color-paper-deep);
+  padding: 0.1em 0.35em;
+}
+.prose ul { padding-left: 1.1rem; list-style: none; }
+.prose li { position: relative; }
+.prose ul > li::before {
+  content: "—";
+  position: absolute;
+  left: -1.1rem;
+  color: var(--color-ink-soft);
+}
+.prose a { text-decoration: underline; text-underline-offset: 3px; }
+.prose a:hover { color: var(--color-mark); }
+
+/* Phase 1 ships no motion at all. This is the standing guard for Phases 2–3. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

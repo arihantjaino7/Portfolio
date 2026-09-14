@@ -1,0 +1,89 @@
+---
+title: SentinelsAI
+year: 2026
+order: 2
+role: Backend and agent orchestration
+team: Team ELARA
+summary: >-
+  A passive security scanner with zero attack surface: eight concurrent agents grade a
+  target 0–100 in seconds, then a deterministic pipeline opens a pull request that fixes it.
+stack:
+  - Python
+  - FastAPI
+  - Next.js
+  - Groq API
+  - asyncio
+links: {}
+
+problem: >-
+  Most security scanners establish what is wrong with a target by attacking it, which
+  makes them illegal to point at infrastructure you do not own and useless as something
+  a team can run continuously. SentinelsAI grades a target using only observations
+  anyone could make from the outside, and sends no attack traffic at all.
+
+diagram:
+  caption: >-
+    The scoring layer is the one that matters. Eight agents produce overlapping findings;
+    deduplication and decay stop the same underlying flaw being charged twice.
+  layers:
+    - title: Client
+      nodes:
+        - label: Next.js dashboard
+          note: report + diff preview
+    - title: API
+      nodes:
+        - label: FastAPI
+          note: POST /scan
+    - title: Agents
+      nodes:
+        - label: Headers, TLS
+        - label: DNS, subdomain
+          note: takeover checks
+        - label: API security
+        - label: Misconfiguration
+    - title: Scoring
+      nodes:
+        - label: Dedupe + decay
+          note: deterministic 0–100
+          emphasis: true
+    - title: Auto-fix
+      nodes:
+        - label: Python patchers
+          note: never an LLM
+        - label: Pull request
+          note: main untouched
+
+decision:
+  question: What writes the fix?
+  chose: Deterministic Python patchers, with the model kept out of the write path
+  rejected:
+    - An LLM generating the patch directly
+    - An LLM generating the patch behind a human approval step
+  why: >-
+    A security fix that is right most of the time is not a security fix. A model asked
+    to rewrite an nginx config will produce something plausible every time and something
+    correct most of the time, and the failure mode is a change that looks fine in review
+    and quietly widens the hole. Putting a human gate in front of it only moves the
+    problem: reviewers approve plausible diffs. So the patchers are ordinary Python —
+    each one handles a finding type it fully understands, and refuses anything outside
+    that. Every change is rendered as a diff before a byte is written and lands on a
+    branch as a pull request, never on main. The pipeline fixes less than an LLM would
+    claim to, and everything it does fix is verifiable by reading the patch.
+
+proof:
+  kind: diff
+  summary: verifiable patch
+  file: sentinels/autofix.txt
+  caption: >-
+    A patch produced by the auto-fix pipeline, shown exactly as it is previewed before
+    the pull request is opened.
+---
+
+The eight agents run under a single `asyncio.gather`, so total scan time is bounded by
+the slowest agent rather than their sum. Each returns findings in a common shape, which
+is what makes the scoring layer possible at all.
+
+Score deduplication matters more than it sounds. A missing security header shows up in
+the header agent, the API agent, and the misconfiguration agent; scored naively, one
+mistake costs a target three penalties and the grade stops meaning anything. Decay
+handles the same class of problem across severity tiers.

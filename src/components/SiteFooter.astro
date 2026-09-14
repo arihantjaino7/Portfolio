@@ -1,0 +1,41 @@
+---
+import { person, links } from '../config/site';
+import { assets } from '../config/assets';
+
+const row = [
+  { href: links.github, label: 'github' },
+  { href: links.linkedin, label: 'linkedin' },
+  { href: links.x, label: 'x' },
+  { href: assets.resume, label: 'resume (pdf)' },
+];
+const year = new Date().getFullYear();
+---
+
+<footer id="contact" class="border-t border-rule mt-(--spacing-chapter)">
+  <div class="shell py-(--spacing-chapter)">
+    <p class="meta mb-6">contact</p>
+    <a
+      href={links.email}
+      class="u inline-block font-medium leading-none"
+      style="font-size: var(--text-project)"
+    >
+      {person.email}
+    </a>
+
+    <ul class="mt-10 flex flex-wrap gap-x-8 gap-y-3 list-none p-0 m-0">
+      {
+        row.map((r) => (
+          <li>
+            <a class="meta u" href={r.href} rel={r.href.startsWith('http') ? 'me noopener' : undefined}>
+              {r.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="meta mt-14 mb-0">
+      © {year} {person.name} · built with astro · {person.location.toLowerCase()}
+    </p>
+  </div>
+</footer>

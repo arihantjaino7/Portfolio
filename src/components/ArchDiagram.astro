@@ -1,0 +1,191 @@
+---
+/**
+ * Architecture diagram — spine step II.
+ *
+ * Driven entirely by frontmatter `diagram.layers`, so a new case study needs
+ * one .mdx file and no new component. Every label is a real <text> node:
+ * selectable, searchable, crawlable. No canvas, no image of type.
+ *
+ * A hand-authored SVG dropped in public/ takes precedence via `svg`.
+ */
+interface Node { label: string; note?: string; emphasis?: boolean }
+interface Layer { title: string; nodes: Node[] }
+interface Props {
+  caption: string;
+  svg?: string;
+  layers?: Layer[];
+  title: string;
+}
+const { caption, svg, layers = [], title } = Astro.props;
+
+// Geometry. Fixed units; the viewBox scales, the overflow container protects
+// legibility below ~700px rather than shrinking type into nothing.
+const PAD = 26;
+const TITLE_H = 30;
+const NODE_W = 176;
+const NODE_H = 64;
+const NODE_GAP = 14;
+const COL_GAP = 56;
+
+const cols = layers.length;
+const maxNodes = Math.max(1, ...layers.map((l) => l.nodes.length));
+const bodyH = maxNodes * NODE_H + (maxNodes - 1) * NODE_GAP;
+const W = PAD * 2 + cols * NODE_W + Math.max(0, cols - 1) * COL_GAP;
+const H = PAD * 2 + TITLE_H + bodyH;
+const midY = PAD + TITLE_H + bodyH / 2;
+
+const colX = (i: number) => PAD + i * (NODE_W + COL_GAP);
+
+/** Naive two-line wrap so long labels don't overrun the box. */
+function wrap(text: string, max = 24): string[] {
+  if (text.length <= max) return [text];
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let line = '';
+  for (const w of words) {
+    if ((line + ' ' + w).trim().length > max && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = (line + ' ' + w).trim();
+    }
+  }
+  if (line) lines.push(line);
+  return lines.slice(0, 2);
+}
+
+const placed = layers.map((layer, i) => {
+  const n = layer.nodes.length;
+  const stackH = n * NODE_H + (n - 1) * NODE_GAP;
+  const top = PAD + TITLE_H + (bodyH - stackH) / 2;
+  return {
+    ...layer,
+    x: colX(i),
+    nodes: layer.nodes.map((node, j) => ({
+      ...node,
+      y: top + j * (NODE_H + NODE_GAP),
+      lines: wrap(node.label),
+    })),
+  };
+});
+
+const altText = `${title} architecture: ${layers
+  .map((l) => `${l.title} — ${l.nodes.map((n) => n.label).join(', ')}`)
+  .join('; then ')}.`;
+---
+
+<figure class="diagram">
+  {
+    svg ? (
+      <div class="frame">
+        <img src={svg} alt={altText} width="1200" height="675" loading="lazy" decoding="async" />
+      </div>
+    ) : (
+      <div class="scroll">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width={W}
+          height={H}
+          role="img"
+          aria-labelledby="diagram-title diagram-desc"
+          class="svg"
+        >
+          <title id="diagram-title">{`${title} architecture`}</title>
+          <desc id="diagram-desc">{altText}</desc>
+
+          <defs>
+            <marker
+              id="arw"
+              viewBox="0 0 8 8"
+              refX="7"
+              refY="4"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M0,0 L8,4 L0,8 z" class="arrowhead" />
+            </marker>
+          </defs>
+
+          {placed.slice(0, -1).map((_, i) => (
+            <line
+              x1={colX(i) + NODE_W + 12}
+              y1={midY}
+              x2={colX(i + 1) - 12}
+              y2={midY}
+              class="arrow"
+              marker-end="url(#arw)"
+            />
+          ))}
+
+          {placed.map((layer) => (
+            <g>
+              <text x={layer.x} y={PAD + 12} class="layer-title">
+                {layer.title.toLowerCase()}
+              </text>
+              {layer.nodes.map((node) => (
+                <g class:list={['node', { emph: node.emphasis }]}>
+                  <rect x={layer.x} y={node.y} width={NODE_W} height={NODE_H} class="box" />
+                  <text x={layer.x + 14} y={node.y + (node.note ? 26 : 32)} class="label">
+                    {node.lines.map((line, k) => (
+                      <tspan x={layer.x + 14} dy={k === 0 ? 0 : 15}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                  {node.note && (
+                    <text x={layer.x + 14} y={node.y + NODE_H - 14} class="note">
+                      {node.note}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </g>
+          ))}
+        </svg>
+      </div>
+    )
+  }
+  <figcaption class="meta">{caption}</figcaption>
+</figure>
+
+<style>
+  .diagram { margin: 0; }
+  .scroll {
+    overflow-x: auto;
+    border: 1px solid var(--color-rule);
+    background: var(--color-paper-deep);
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+  }
+  .svg {
+    min-width: 560px;
+    max-width: 100%;
+    height: auto;
+  }
+  .box {
+    fill: var(--color-paper);
+    stroke: var(--color-ink-soft);
+    stroke-width: 1;
+  }
+  .emph .box { stroke: var(--color-mark); stroke-width: 1.75; }
+  .emph .label { fill: var(--color-mark); }
+  .label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    fill: var(--color-ink);
+  }
+  .note {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    fill: var(--color-ink-soft);
+  }
+  .layer-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    fill: var(--color-ink-soft);
+  }
+  .arrow { stroke: var(--color-ink-soft); stroke-width: 1; }
+  .arrowhead { fill: var(--color-ink-soft); }
+  figcaption { margin-top: 0.9rem; max-width: var(--measure); }
+</style>

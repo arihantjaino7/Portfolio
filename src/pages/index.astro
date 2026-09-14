@@ -1,0 +1,160 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Chapter from '../components/Chapter.astro';
+import ProjectRow from '../components/ProjectRow.astro';
+import ProofFigure from '../components/ProofFigure.astro';
+import { person, achievements, areas } from '../config/site';
+import { assets, ratio } from '../config/assets';
+
+const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+---
+
+<Base ogImage={assets.og('default')}>
+  <!-- Hero. One orchestrated entrance in Phase 3; nothing moves in Phase 1. -->
+  <section class="hero" aria-labelledby="hero-name">
+    <div class="shell">
+      <h1 id="hero-name" class="name">{person.name}</h1>
+      <p class="statement measure">{person.statement}</p>
+
+      <dl class="ident meta">
+        <div><dt>study</dt><dd>{person.degree.toLowerCase()}</dd></div>
+        <div><dt>at</dt><dd>{person.school.toLowerCase()}</dd></div>
+        <div><dt>span</dt><dd>{person.span}</dd></div>
+        <div><dt>based</dt><dd>{person.location.toLowerCase()}</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <Chapter id="intro" numeral="I" title="Intro" readout="3 sentences">
+    <div class="intro">
+      <div class="frame portrait" style={`aspect-ratio: ${ratio.portrait}`}>
+        <img
+          src={assets.portrait}
+          alt={`${person.name}, portrait`}
+          width="1000"
+          height="1250"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      <div class="prose">
+        <p>
+          I am a computer science undergraduate at Amity University Noida, two years into a
+          four-year degree, and I have shipped more production systems than coursework.
+        </p>
+        <p>
+          I work mostly solo, which means I own the schema, the API, the tests and the
+          deploy — and have learned where each of those quietly fails when nobody else is
+          checking.
+        </p>
+        <p>
+          What I am actually interested in is enforcement: making a rule hold at the layer
+          where it cannot be argued with.
+        </p>
+      </div>
+    </div>
+  </Chapter>
+
+  <Chapter id="work" numeral="II" title="Work" readout={`${projects.length} entries`}>
+    {
+      projects.map((p, i) => (
+        <ProjectRow
+          slug={p.id}
+          title={p.data.title}
+          year={p.data.year}
+          summary={p.data.summary}
+          stack={p.data.stack}
+          index={i}
+        />
+      ))
+    }
+    <p class="all"><a class="u meta" href="/work">all case studies</a></p>
+  </Chapter>
+
+  <Chapter id="build" numeral="III" title="What I build" readout={`${areas.length} areas`}>
+    <!-- A set, not a sequence: unnumbered. No icons, no cards. -->
+    <ul class="areas">
+      {
+        areas.map((a) => (
+          <li>
+            <h3 class="area-title">{a.title}</h3>
+            <hr />
+            <p class="area-body">{a.body}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </Chapter>
+
+  <Chapter id="proof" numeral="IV" title="Proof" readout={`${achievements.length} results`}>
+    <ul class="figures">
+      {achievements.map((a) => <ProofFigure {...a} />)}
+    </ul>
+  </Chapter>
+</Base>
+
+<style>
+  .hero {
+    padding-block: clamp(4rem, 16vh, 11rem) clamp(4rem, 12vh, 8rem);
+  }
+  .name {
+    font-size: var(--text-hero);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    margin: 0 0 1.5rem;
+  }
+  .statement {
+    font-size: clamp(1.125rem, 2.4vw, 1.5rem);
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .ident {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.5rem 2rem;
+    margin: clamp(3rem, 8vh, 5rem) 0 0;
+    border-top: 1px solid var(--color-rule);
+    padding-top: 1.25rem;
+  }
+  .ident div { display: flex; gap: 0.75rem; }
+  .ident dt { color: var(--color-ink-soft); min-width: 3.25rem; }
+  .ident dd { margin: 0; color: var(--color-ink); }
+
+  .intro { display: grid; gap: 2.5rem; }
+  .portrait { max-width: 20rem; }
+  @media (min-width: 720px) {
+    .intro { grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); gap: clamp(2rem, 4vw, 3.5rem); }
+    .portrait { max-width: none; }
+  }
+
+  .all { margin-top: clamp(3rem, 7vh, 5rem); }
+
+  .areas {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: clamp(2rem, 5vh, 3.25rem) clamp(2rem, 4vw, 4rem);
+  }
+  @media (min-width: 720px) {
+    .areas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  .area-title { font-size: 1.125rem; font-weight: 600; margin: 0 0 0.9rem; }
+  .areas hr { margin-bottom: 0.9rem; }
+  .area-body { margin: 0; font-size: 1rem; max-width: 42ch; }
+
+  .figures {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: clamp(2.5rem, 6vh, 4rem) clamp(2rem, 4vw, 3.5rem);
+  }
+  @media (min-width: 720px) {
+    .figures { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>

@@ -1,0 +1,93 @@
+---
+title: ARC
+year: 2026
+order: 1
+role: Solo — schema, application, deploy
+summary: >-
+  A fitness competition platform that scores every competitor against their own
+  goal, with the anti-cheat rules enforced inside the database rather than the app.
+stack:
+  - Next.js
+  - TypeScript
+  - Supabase (PostgreSQL)
+  - Vitest
+  - Cloudflare Workers
+links: {}
+
+problem: >-
+  Fitness competitions score everyone against one shared target, so a competitor
+  cutting calories and a competitor bulking can never be ranked fairly in the same
+  league. ARC scores each person against their own personalised goal instead, which
+  only works if nobody can quietly edit a goal or a rule once the numbers stop going
+  their way.
+
+diagram:
+  caption: >-
+    Every path to the data — the app, the API, a client with its own key — lands on the
+    same enforcement layer. There is no route that skips it.
+  layers:
+    - title: Client
+      nodes:
+        - label: Next.js app
+          note: app router, RSC
+        - label: Any API client
+          note: holds its own anon key
+    - title: Edge
+      nodes:
+        - label: Cloudflare Workers
+          note: OpenNext adapter
+    - title: Data API
+      nodes:
+        - label: PostgREST
+          note: Supabase
+    - title: Enforcement
+      nodes:
+        - label: RLS policies
+          note: per-row, per-role
+          emphasis: true
+        - label: Triggers
+          note: day locks
+          emphasis: true
+    - title: Store
+      nodes:
+        - label: Postgres
+          note: versioned rule sets
+        - label: Immutable log
+          note: append only
+
+decision:
+  question: Where does the anti-cheat live?
+  chose: Postgres triggers and row-level security
+  rejected:
+    - Validation inside Next.js server actions
+    - A trusted backend service placed in front of the database
+  why: >-
+    Supabase hands the browser its own key and lets it talk to PostgREST directly.
+    That means any rule I enforce in application code is a rule a competitor can skip
+    by opening a terminal — server actions and a gatekeeper service both assume the
+    only caller is my code, and neither assumption survives contact with a motivated
+    user who wants to backdate an entry. Moving day locks and rule immutability into
+    triggers and RLS makes the check unconditional: the database refuses the write
+    whether the request came from the app, from curl, or from the Supabase dashboard.
+    The cost is real — policies are harder to read than a TypeScript guard, and the
+    test suite has to reach the database to mean anything — and that cost is why the
+    suite exists.
+
+proof:
+  kind: tests
+  summary: 56 passing
+  file: arc/tests.txt
+  caption: >-
+    Vitest run over the scoring, locking and rule-versioning paths. One full production
+    competition has since run end to end between two live users.
+---
+
+Scores are computed in the competitor's own timezone, not the server's, so a day
+boundary means the same thing for everyone in a league. Rule sets are versioned rather
+than mutated: a score always resolves against the version that was in force on the day
+it was earned, which makes retroactively fixing a losing result structurally
+impossible rather than merely discouraged.
+
+The blind-mode reveal holds standings back until a configured point in the
+competition. It is a product decision with a schema consequence — the rankings have to
+be computable and withheld, not simply uncomputed.

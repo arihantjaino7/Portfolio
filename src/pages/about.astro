@@ -1,0 +1,124 @@
+---
+import Base from '../layouts/Base.astro';
+import { person, skills, links } from '../config/site';
+import { assets, ratio } from '../config/assets';
+
+const coursework = [
+  'Data Structures and Algorithms',
+  'Database Management Systems',
+  'Operating Systems',
+  'Computer Networks',
+  'Object-Oriented Programming',
+  'Discrete Mathematics',
+];
+---
+
+<Base
+  title="About"
+  description={`${person.name} — CS undergraduate at ${person.school}, building multi-agent AI systems, security tooling and full-stack products.`}
+  ogImage={assets.og('about')}
+>
+  <div class="shell page">
+    <div class="grid-rail wide-rail">
+      <div class="rail">
+        <div class="frame portrait" style={`aspect-ratio: ${ratio.portrait}`}>
+          <img
+            src={assets.portrait}
+            alt={`${person.name}, portrait`}
+            width="1000"
+            height="1250"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
+
+      <div class="rail-body">
+        <h1 class="title">About</h1>
+
+        <div class="prose bio">
+          <p>
+            I am {person.name}, a computer science undergraduate at {person.school}, in the
+            second year of a four-year degree that finishes in 2028. I build multi-agent AI
+            systems, security tooling, and full-stack products — mostly alone, which is the
+            single most useful constraint I have had.
+          </p>
+          <p>
+            Working solo means there is nobody to hand the boring half to. I write the schema
+            and then live with it, write the tests and then find out which ones were theatre,
+            deploy the thing and then watch it behave differently than it did locally. Three
+            projects in, the pattern I keep arriving at is that the interesting question is
+            almost never <em>what</em> a system should enforce — it is <em>where</em>. A rule
+            in application code is a suggestion to anyone holding an API key. The same rule in
+            a database trigger is a fact.
+          </p>
+          <p>
+            That idea runs through most of what I have built. In ARC it is Postgres triggers
+            and row-level security holding competition rules against a client that talks
+            straight to the data API. In SentinelsAI it is keeping a language model entirely
+            out of the write path, so every security fix is a patch a person can read and
+            verify rather than a plausible-looking rewrite.
+          </p>
+          <p>
+            I am looking for internships and new-grad roles in backend, infrastructure, and
+            applied AI engineering. The fastest way to reach me is{' '}
+            <a href={links.email}>email</a>.
+          </p>
+        </div>
+
+        <section class="block">
+          <h2 class="block-title">Skills</h2>
+          <!-- A set, not a ranking: no numbers, no bars. -->
+          <dl class="skills">
+            {
+              skills.map((g) => (
+                <div class="skill-group">
+                  <dt class="meta">{g.group}</dt>
+                  <dd>{g.items.join(' · ')}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </section>
+
+        <section class="block">
+          <h2 class="block-title">Coursework</h2>
+          <ul class="courses meta">{coursework.map((c) => <li>{c.toLowerCase()}</li>)}</ul>
+        </section>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page { padding-block: clamp(3.5rem, 10vh, 6rem); }
+  .portrait { max-width: 16rem; margin-bottom: 2rem; }
+  @media (min-width: 900px) {
+    .rail { position: sticky; top: clamp(3rem, 12vh, 6rem); align-self: start; }
+    .portrait { max-width: none; margin-bottom: 0; }
+  }
+
+  .title { font-size: var(--text-chapter); margin-bottom: 2rem; }
+  .bio { font-size: 1.0625rem; }
+  .bio em { font-style: normal; font-weight: 600; }
+
+  .block { margin-top: clamp(3rem, 8vh, 4.5rem); }
+  .block-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem; }
+
+  .skills { margin: 0; display: grid; gap: 1.25rem; max-width: var(--measure); }
+  .skill-group { border-top: 1px solid var(--color-rule); padding-top: 0.75rem; }
+  .skill-group dt { margin-bottom: 0.4rem; }
+  .skill-group dd { margin: 0; font-size: 1rem; }
+
+  .courses {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.4rem;
+    max-width: var(--measure);
+  }
+  @media (min-width: 560px) {
+    .courses { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 2rem; }
+  }
+</style>

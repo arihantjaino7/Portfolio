@@ -1,0 +1,32 @@
+---
+import { person, nav, links } from '../config/site';
+const path = Astro.url.pathname;
+const isHome = path === '/';
+---
+
+<header class="border-b border-rule">
+  <div class="shell flex items-baseline justify-between gap-4 py-4">
+    {
+      isHome ? (
+        <span class="meta text-ink">{person.name.toLowerCase()}</span>
+      ) : (
+        <a href="/" class="meta text-ink u">{person.name.toLowerCase()}</a>
+      )
+    }
+    <nav aria-label="Primary" class="flex items-baseline gap-5">
+      {
+        nav.map((item) => (
+          <a
+            href={item.href}
+            class="meta u"
+            aria-current={path.startsWith(item.href) ? 'page' : undefined}
+            style={path.startsWith(item.href) ? 'color: var(--color-ink)' : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <a href={links.email} class="meta u">email</a>
+    </nav>
+  </div>
+</header>

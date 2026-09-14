@@ -1,0 +1,64 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { assets } from '../../config/assets';
+
+const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+---
+
+<Base
+  title="Work"
+  description="Case studies: ARC, a fairness-first competition platform with database-layer anti-cheat, and SentinelsAI, a passive security scanner with a deterministic auto-fix pipeline."
+  ogImage={assets.og('work')}
+>
+  <div class="shell page">
+    <h1 class="title">Work</h1>
+    <p class="meta count">{projects.length} case {projects.length === 1 ? 'study' : 'studies'}</p>
+
+    <ol class="list">
+      {
+        projects.map((p, i) => (
+          <li class="row">
+            <span class="meta idx" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <div class="body">
+              <h2 class="name">
+                <a class="u" href={`/work/${p.id}`}>{p.data.title}</a>
+              </h2>
+              <p class="summary measure">{p.data.summary}</p>
+              <p class="meta stack">{p.data.stack.map((s) => s.toLowerCase()).join(' · ')}</p>
+            </div>
+            <span class="meta year">{p.data.year}</span>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</Base>
+
+<style>
+  .page { padding-block: clamp(3.5rem, 12vh, 7rem); }
+  .title { font-size: var(--text-chapter); margin-bottom: 0.75rem; }
+  .count { margin: 0 0 clamp(2.5rem, 6vh, 4rem); }
+
+  .list { list-style: none; padding: 0; margin: 0; }
+  .row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1.25rem;
+    padding-block: clamp(1.75rem, 4vh, 2.75rem);
+    border-top: 1px solid var(--color-rule);
+  }
+  .row:last-child { border-bottom: 1px solid var(--color-rule); }
+  @media (min-width: 720px) {
+    .row { grid-template-columns: 3rem 1fr auto; column-gap: 2rem; }
+  }
+
+  .idx { padding-top: 0.55rem; }
+  .name { font-size: var(--text-project); font-weight: 500; margin: 0 0 0.75rem; }
+  .summary { margin: 0 0 0.75rem; font-size: 1rem; }
+  .stack { margin: 0; }
+  .year { grid-column: 2; padding-top: 0.55rem; }
+  @media (min-width: 720px) { .year { grid-column: 3; } }
+</style>

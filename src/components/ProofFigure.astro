@@ -1,0 +1,43 @@
+---
+/**
+ * Chapter IV. The number is the visual element — no logo row, no badge, no card.
+ * `data-count-to` is the hook Phase 3 counts up; it is inert in Phase 1.
+ */
+interface Props {
+  figure: string;
+  countTo: number;
+  event: string;
+  year: string;
+  detail: string;
+}
+const { figure, countTo, event, year, detail } = Astro.props;
+---
+
+<li class="proof-figure">
+  <p class="figure" data-count-to={countTo}>{figure}</p>
+  <hr />
+  <p class="event">{event}</p>
+  <p class="meta detail">{detail} · {year}</p>
+</li>
+
+<style>
+  .proof-figure { list-style: none; }
+  .figure {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: var(--text-figure);
+    line-height: 0.9;
+    white-space: nowrap; /* "top 6%" must never break across two lines */
+    letter-spacing: -0.05em;
+    color: var(--color-mark);
+    margin: 0 0 1rem;
+  }
+  hr { margin-bottom: 1rem; }
+  .event {
+    font-weight: 500;
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    margin: 0 0 0.4rem;
+  }
+  .detail { margin: 0; }
+</style>
