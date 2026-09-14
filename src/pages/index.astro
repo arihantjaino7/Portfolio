@@ -94,6 +94,11 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
       {achievements.map((a) => <ProofFigure {...a} />)}
     </ul>
   </Chapter>
+
+  <!-- Phase 2. Home only — every other route stays at zero client JS. -->
+  <script>
+    import '../scripts/motion';
+  </script>
 </Base>
 
 <style>

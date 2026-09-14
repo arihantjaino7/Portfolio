@@ -6,9 +6,13 @@ deployed on Cloudflare Pages.
 Design decisions live in **[DESIGN.md](./DESIGN.md)**. Structure and build order
 live in **[PLAN.md](./PLAN.md)**. The brief is **[SPEC.md](./SPEC.md)**.
 
-**Phase 1 (this build): the complete static site, zero client JavaScript.**
-Phases 2 and 3 add Lenis smooth scroll and the chapter choreography; nothing on
-the site moves yet, by design.
+**Phase 1** — the complete static site, zero client JavaScript. *Done.*
+**Phase 2** — Lenis smooth scroll and chapter choreography, on `/` only. *Done.*
+**Phase 3** — hero entrance, the pinned plate for Chapter II, proof count-up.
+
+Motion lives in `src/scripts/motion.ts` and is imported by `src/pages/index.astro`
+alone. Every other route still ships zero client JavaScript. Under
+`prefers-reduced-motion: reduce`, Lenis and GSAP are never fetched at all.
 
 ---
 
@@ -138,14 +142,16 @@ npm i -D playwright lighthouse chrome-launcher   # not project deps — they pul
 node scripts/verify.mjs
 ```
 
-Phase 1 baseline, mobile:
+Phase 2 baseline, mobile:
 
 | Route | Performance | Accessibility | Best practices | SEO | LCP | CLS |
 | --- | --- | --- | --- | --- | --- | --- |
-| `/` | 100 | 100 | 100 | 100 | 1.5 s | 0 |
+| `/` | 100 | 100 | 100 | 100 | 1.7 s | 0 |
 | `/work` | 100 | 100 | 100 | 100 | 1.4 s | 0 |
 | `/work/arc` | 100 | 100 | 100 | 100 | 1.4 s | 0 |
 | `/about` | 100 | 100 | 100 | 100 | 1.4 s | 0 |
 
-Total blocking time is 0 ms on every route because no route ships client
-JavaScript. Keep it that way for anything that does not need it.
+`/work`, `/work/arc` and `/about` ship no client JavaScript at all. `/` loads a
+2.6 kB entry that pulls Lenis and GSAP only after `requestIdleCallback` fires,
+and only when the reader has not asked for reduced motion. Keep it that way:
+adding a route-wide script is the easiest way to lose these numbers.

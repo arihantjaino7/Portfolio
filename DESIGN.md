@@ -155,6 +155,47 @@ and `prefers-reduced-motion: reduce` returns the page to exactly the Phase 1 bui
 
 ---
 
+## 5b. What Phase 2 shipped
+
+Lenis plus GSAP/ScrollTrigger, **on `/` only**. `/work`, `/work/[slug]`, `/about`
+and `/404` still ship zero client JavaScript: they are documents, and native
+scrolling is better for reading a long one than any amount of easing. The brief
+says ship zero JS on any route that does not need it, and a case study does not.
+
+Three things, and nothing else moves:
+
+1. **Wheel smoothing.** `lerp: 0.11`, settling in roughly 150ms. Lenis' default
+   1.2s duration is the floaty one the brief warns about; this tracks the wheel
+   closely enough to read as weight rather than lag. `syncTouch` stays off, so
+   phones keep native momentum — cheaper, smoother, and the primary audience is
+   on a handset.
+2. **The rail hairline fills** as you traverse a chapter. The rail already says
+   how much chapter there is (`3 entries`); now it says how much is left. That
+   is the same job §4 gives it, done live — information, not decoration, and the
+   one thing the static build genuinely could not express.
+3. **The chapter you are in is inked.** Its numeral sits in `--ink`; the others
+   recede to `--ink-soft`. One property, one idea. Not `--rule`: at 1.4:1 a
+   recessed numeral is invisible, which defeats the rail and fails contrast.
+
+**The rail is still pinned by CSS `position: sticky`, not by a GSAP pin.** The
+brief asks for the chapter marker to hold while its content scrolls past, and
+sticky already does exactly that — with no pin-spacer, no layout shift, no
+refresh bookkeeping, and identical behaviour when JavaScript never runs. Spending
+the JS budget on the progress the rail could not otherwise show is the better
+trade. There is no fade-up on any section and no hover-lift on any card.
+
+### Reduced motion
+
+`prefers-reduced-motion: reduce` means Lenis and GSAP are **never fetched** —
+they sit behind a dynamic import, so a reader who asked for no motion pays
+nothing for it, not even the download. Flipping the OS setting mid-session tears
+the whole thing down and restores the static page. What is left underneath is
+the Phase 1 build exactly: sticky rail, inked numerals, collapsed hairline.
+
+Initialisation waits for `requestIdleCallback` (1500ms ceiling). Running GSAP
+eagerly cost 0.6s of LCP on mobile; nothing here is needed before the first
+scroll.
+
 ## 6. Standing constraints
 
 - Body copy never exceeds 66ch.

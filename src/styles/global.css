@@ -205,6 +205,32 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
 .prose a { text-decoration: underline; text-underline-offset: 3px; }
 .prose a:hover { color: var(--color-mark); }
 
+/* ─────────────────────────────────────────────────────────────
+   Motion — Phase 2. Every rule here is gated on `html.motion`, which
+   src/scripts/motion.ts adds only after it has confirmed the reader has not
+   asked for reduced motion. Without that class this file describes the
+   Phase 1 page exactly.
+   ───────────────────────────────────────────────────────────── */
+
+/* Lenis owns the scroll position while it is running. */
+html.lenis,
+html.lenis body { height: auto; }
+html.lenis.lenis-smooth { scroll-behavior: auto !important; }
+html.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+html.lenis.lenis-stopped { overflow: hidden; }
+
+/* The chapter you are in is inked; the rest recede to --ink-soft. One property.
+   Not --rule: at 1.4:1 the recessed numeral is invisible, which defeats the
+   point of the rail and fails contrast. --ink-soft clears 3:1 and still reads
+   as clearly behind the active one. */
+html.motion .numeral {
+  -webkit-text-stroke-color: var(--color-ink-soft);
+  transition: -webkit-text-stroke-color 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+html.motion .chapter.is-active .numeral {
+  -webkit-text-stroke-color: var(--color-ink);
+}
+
 /* Phase 1 ships no motion at all. This is the standing guard for Phases 2–3. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

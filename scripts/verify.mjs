@@ -9,9 +9,10 @@
  *   npm i -D playwright lighthouse chrome-launcher
  *   node scripts/verify.mjs
  *
- * Phase 1 baseline: performance / a11y / best-practices / SEO all 100 on
- * /, /work, /work/arc and /about; CLS 0; TBT 0 ms; no overflow; every focusable
- * element shows a 2px --mark ring.
+ * Phase 2 baseline: performance / a11y / best-practices / SEO all 100 on
+ * /, /work, /work/arc and /about; CLS 0; no overflow; every focusable element
+ * shows a 2px --mark ring; motion initialises on / and is entirely absent —
+ * including the network requests for it — under prefers-reduced-motion.
  */
 import { chromium } from 'playwright';
 import lighthouse from 'lighthouse';
@@ -44,6 +45,97 @@ for (const route of ROUTES) {
     }
     await page.close();
   }
+}
+
+/* ── motion: present on /, and genuinely absent under reduce ─────────── */
+const INK = 'rgb(22, 24, 26)';
+const INK_SOFT = 'rgb(91, 96, 103)';
+const scaleY = (el) => +new DOMMatrixReadOnly(getComputedStyle(el).transform).d.toFixed(2);
+
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const seen = [];
+  page.on('request', (r) => seen.push(r.url()));
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page
+    .waitForFunction(() => document.documentElement.classList.contains('motion'), null, { timeout: 8000 })
+    .catch(() => {
+      console.log('FAIL motion never initialised on /');
+      failed++;
+    });
+
+  // Mid-chapter: the rail must show partial progress and the active numeral ink.
+  await page.evaluate(() => {
+    const r = document.querySelector('#work').getBoundingClientRect();
+    window.scrollTo(0, window.scrollY + r.top + r.height * 0.5 - innerHeight / 2);
+  });
+  await page.waitForTimeout(1400);
+
+  const state = await page.evaluate(
+    ([scaleYSrc]) => {
+      const sy = eval(scaleYSrc);
+      const work = document.querySelector('#work');
+      return {
+        active: [...document.querySelectorAll('.chapter.is-active')].map((c) => c.id),
+        fill: sy(work.querySelector('.rail-line-fill')),
+        activeStroke: getComputedStyle(work.querySelector('.numeral')).webkitTextStrokeColor,
+        idleStroke: getComputedStyle(document.querySelector('#intro .numeral')).webkitTextStrokeColor,
+      };
+    },
+    [scaleY.toString()],
+  );
+
+  const checks = [
+    [state.active.length === 1 && state.active[0] === 'work', `exactly one active chapter, got [${state.active}]`],
+    [state.fill > 0 && state.fill < 1, `rail fill mid-progress, got ${state.fill}`],
+    [state.activeStroke === INK, `active numeral inked, got ${state.activeStroke}`],
+    [state.idleStroke === INK_SOFT, `idle numeral recedes to --ink-soft, got ${state.idleStroke}`],
+  ];
+  for (const [ok, msg] of checks) {
+    if (!ok) {
+      console.log('FAIL motion:', msg);
+      failed++;
+    }
+  }
+  await page.close();
+}
+
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  const seen = [];
+  page.on('request', (r) => seen.push(r.url()));
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(2500);
+
+  const fetched = seen.filter((u) => /lenis|gsap|ScrollTrigger/i.test(u));
+  const quiet = await page.evaluate(
+    ([scaleYSrc]) => {
+      const sy = eval(scaleYSrc);
+      const work = document.querySelector('#work');
+      return {
+        motion: document.documentElement.classList.contains('motion'),
+        sticky: getComputedStyle(work.querySelector('.rail-sticky')).position,
+        stroke: getComputedStyle(work.querySelector('.numeral')).webkitTextStrokeColor,
+        fill: sy(work.querySelector('.rail-line-fill')),
+      };
+    },
+    [scaleY.toString()],
+  );
+
+  const checks = [
+    [!quiet.motion, 'html.motion must not be applied under reduce'],
+    [fetched.length === 0, `motion libraries must not be fetched under reduce, got ${fetched.length}`],
+    [quiet.sticky === 'sticky', `rail must still hold via CSS sticky, got ${quiet.sticky}`],
+    [quiet.stroke === INK, `numerals must stay inked under reduce, got ${quiet.stroke}`],
+    [quiet.fill === 0, `rail fill must stay collapsed under reduce, got ${quiet.fill}`],
+  ];
+  for (const [ok, msg] of checks) {
+    if (!ok) {
+      console.log('FAIL reduced-motion:', msg);
+      failed++;
+    }
+  }
+  await page.close();
 }
 
 /* ── keyboard: every focusable element shows a ring ──────────────────── */
@@ -94,7 +186,7 @@ for (const route of ROUTES) {
     failed++;
   }
 }
-await chrome.kill();
+chrome.kill();
 console.table(rows);
 
 console.log(failed === 0 ? '\nquality floor: pass' : `\nquality floor: ${failed} failure(s)`);

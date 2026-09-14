@@ -24,7 +24,7 @@ const { numeral, title, readout, id, bare = false } = Astro.props;
     <div class="rail">
       <div class="rail-sticky">
         <span class="numeral" aria-hidden="true">{numeral}</span>
-        <span class="rail-line" aria-hidden="true"></span>
+        <span class="rail-line" aria-hidden="true"><span class="rail-line-fill"></span></span>
         <span class="meta readout">{readout}</span>
       </div>
     </div>
@@ -113,10 +113,19 @@ const { numeral, title, readout, id, bare = false } = Astro.props;
     }
     .rail-line {
       display: block;
+      position: relative;
       width: 1px;
       height: clamp(3rem, 9vh, 7rem);
       background: var(--color-rule);
       margin: 1.25rem 0 1.25rem 0.15rem;
+    }
+    /* Phase 2 drives this; with no JS it stays at zero height and invisible. */
+    .rail-line-fill {
+      position: absolute;
+      inset: 0;
+      background: var(--color-ink);
+      transform: scaleY(0);
+      transform-origin: top center;
     }
     .rail .readout { margin-left: 0; }
   }

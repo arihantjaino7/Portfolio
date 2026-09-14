@@ -58,8 +58,8 @@ async function jpg(path, svg) {
 const placeholder = (w, h, label) => {
   // Strokes and type scale with the canvas, so the label stays readable when the
   // 1920px source is displayed at 400px.
-  const sw = Math.max(2, Math.round(w / 480));
-  const fs = Math.round(w / 26);
+  const sw = Math.max(2, Math.round(w / 600));
+  const fs = Math.round(w / 45);
   const boxW = Math.min(w * 0.92, fs * label.length * 0.62 + fs * 2);
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
