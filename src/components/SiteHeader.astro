@@ -1,5 +1,6 @@
 ---
 import { person, nav, links } from '../config/site';
+import { withBase } from '../config/paths';
 const path = Astro.url.pathname;
 const isHome = path === '/';
 ---
@@ -10,7 +11,7 @@ const isHome = path === '/';
       isHome ? (
         <span class="meta text-ink">{person.name.toLowerCase()}</span>
       ) : (
-        <a href="/" class="meta text-ink u">{person.name.toLowerCase()}</a>
+        <a href={withBase('/')} class="meta text-ink u">{person.name.toLowerCase()}</a>
       )
     }
     <nav aria-label="Primary" class="flex items-baseline gap-5">

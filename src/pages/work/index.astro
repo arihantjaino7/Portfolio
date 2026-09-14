@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { assets } from '../../config/assets';
+import { withBase } from '../../config/paths';
 
 const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order,
@@ -24,7 +25,7 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
             <span class="meta idx" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
             <div class="body">
               <h2 class="name">
-                <a class="u" href={`/work/${p.id}`}>{p.data.title}</a>
+                <a class="u" href={withBase(`/work/${p.id}`)}>{p.data.title}</a>
               </h2>
               <p class="summary measure">{p.data.summary}</p>
               <p class="meta stack">{p.data.stack.map((s) => s.toLowerCase()).join(' · ')}</p>

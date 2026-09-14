@@ -4,6 +4,7 @@ import Base from '../../layouts/Base.astro';
 import ArchDiagram from '../../components/ArchDiagram.astro';
 import ProofArtifact from '../../components/ProofArtifact.astro';
 import { assets } from '../../config/assets';
+import { withBase } from '../../config/paths';
 
 export async function getStaticPaths() {
   const entries = (await getCollection('work', ({ data }) => !data.draft)).sort(
@@ -49,7 +50,7 @@ const hasLinks = Boolean(d.links.repo || d.links.live);
 >
   <article class="shell page">
     <header class="head">
-      <p class="meta breadcrumb"><a class="u" href="/work">work</a> / {entry.id}</p>
+      <p class="meta breadcrumb"><a class="u" href={withBase('/work')}>work</a> / {entry.id}</p>
       <h1 class="title">{d.title}</h1>
       <p class="summary measure">{d.summary}</p>
       <dl class="credits meta">
@@ -157,7 +158,7 @@ const hasLinks = Boolean(d.links.repo || d.links.live);
         <nav class="pager meta" aria-label="More case studies">
           {
             prev ? (
-              <a class="pager-link" href={`/work/${prev.id}`}>
+              <a class="pager-link" href={withBase(`/work/${prev.id}`)}>
                 <span class="pager-dir">previous</span>
                 <span class="u pager-name">{prev.data.title}</span>
               </a>
@@ -167,7 +168,7 @@ const hasLinks = Boolean(d.links.repo || d.links.live);
           }
           {
             next ? (
-              <a class="pager-link next" href={`/work/${next.id}`}>
+              <a class="pager-link next" href={withBase(`/work/${next.id}`)}>
                 <span class="pager-dir">next</span>
                 <span class="u pager-name">{next.data.title}</span>
               </a>

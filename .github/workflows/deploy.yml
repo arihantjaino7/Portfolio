@@ -1,0 +1,58 @@
+# Builds the site and publishes it to GitHub Pages.
+#
+# GitHub Pages serves this project repo from a subdirectory, so the build runs
+# with the base path baked in — see astro.config.mjs. A root-served host
+# (Cloudflare Pages, a custom domain) needs SITE_URL and BASE_PATH overridden;
+# the README has the command.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure Pages
+        # enablement turns Pages on for the repo if it is not already, so this
+        # does not need a manual visit to repository settings first.
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - run: npm ci
+      - run: npm run build
+      - run: npx astro check
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

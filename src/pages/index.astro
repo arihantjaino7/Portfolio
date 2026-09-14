@@ -6,6 +6,7 @@ import ProjectRow from '../components/ProjectRow.astro';
 import ProofFigure from '../components/ProofFigure.astro';
 import { person, achievements, areas } from '../config/site';
 import { assets, ratio } from '../config/assets';
+import { withBase } from '../config/paths';
 
 const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order,
@@ -91,7 +92,7 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
         />
       ))
     }
-    <p class="all"><a class="u meta" href="/work">all case studies</a></p>
+    <p class="all"><a class="u meta" href={withBase('/work')}>all case studies</a></p>
   </Chapter>
 
   <Chapter id="build" numeral="III" title="What I build" readout={`${areas.length} areas`}>

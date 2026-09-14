@@ -12,6 +12,8 @@
  *   public/assets/resume.pdf
  */
 
+import { withBase } from './paths';
+
 export const ratio = {
   portrait: '4 / 5',
   media: '16 / 9',
@@ -19,22 +21,22 @@ export const ratio = {
 } as const;
 
 export const assets = {
-  portrait: '/assets/portrait.jpg',
-  resume: '/assets/resume.pdf',
-  ogDefault: '/assets/og/default.png',
-  favicon: '/favicon.svg',
+  portrait: withBase('/assets/portrait.jpg'),
+  resume: withBase('/assets/resume.pdf'),
+  ogDefault: withBase('/assets/og/default.png'),
+  favicon: withBase('/favicon.svg'),
 
   /** Per-project media, derived by slug — adding a project needs no edit here. */
   project(slug: string) {
     return {
-      shot1: `/assets/${slug}/shot-01.png`,
-      shot2: `/assets/${slug}/shot-02.png`,
-      demo: `/assets/${slug}/demo.mp4`,
-      og: `/assets/og/${slug}.png`,
+      shot1: withBase(`/assets/${slug}/shot-01.png`),
+      shot2: withBase(`/assets/${slug}/shot-02.png`),
+      demo: withBase(`/assets/${slug}/demo.mp4`),
+      og: withBase(`/assets/og/${slug}.png`),
     };
   },
 
   og(route: 'default' | 'work' | 'about' | (string & {})) {
-    return `/assets/og/${route}.png`;
+    return withBase(`/assets/og/${route}.png`);
   },
 } as const;

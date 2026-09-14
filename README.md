@@ -48,7 +48,34 @@ Wi-Fi. Edits hot-reload on the phone too.
 - Not on the same network? `npx cloudflared tunnel --url http://localhost:4321`
   prints a temporary public URL that works from anywhere.
 
-## Deploy to Cloudflare Pages
+## Deploy
+
+The site is published to **GitHub Pages** at
+<https://arihantjaino7.github.io/Portfolio/> by `.github/workflows/deploy.yml`,
+which runs on every push to `main`. Nothing to do by hand — the workflow enables
+Pages itself on the first run.
+
+Because a project repo is served from a subdirectory, the build bakes in
+`base: '/Portfolio'`. Every internal link and asset path goes through
+`withBase()` in `src/config/paths.ts`, so nothing hard-codes a root path.
+`public/.nojekyll` is required: GitHub Pages runs Jekyll by default, which drops
+directories beginning with an underscore, and Astro emits everything into
+`_astro/`.
+
+### Moving to a root-served host
+
+Cloudflare Pages or a custom domain serve from `/`, where the base must be
+empty. Both values are environment-driven:
+
+```bash
+SITE_URL=https://arihantjain.dev BASE_PATH=/ npm run build
+```
+
+`withBase()` becomes the identity function when the base is `/`, so no source
+change is needed — only those two variables and the `SITE`/`BASE` defaults in
+`astro.config.mjs`.
+
+### Cloudflare Pages
 
 The repo is already configured; connecting it is a one-time, two-minute job.
 
@@ -63,17 +90,17 @@ The repo is already configured; connecting it is a one-time, two-minute job.
    | Build output directory | `dist` |
    | Root directory | *(leave blank)* |
 
-3. Add one environment variable under **Settings → Environment variables**:
-   `NODE_VERSION` = `22`.
+3. Add environment variables under **Settings → Environment variables**:
+   `NODE_VERSION` = `22`, `BASE_PATH` = `/`, and `SITE_URL` = your hostname.
 4. Deploy. Every push to `main` publishes; every push to another branch gets a
    preview URL.
 
 `wrangler.toml` already declares `pages_build_output_dir = "dist"`, so
 `npx wrangler pages deploy` works too if you'd rather push builds by hand.
 
-**After the domain is attached**, change one line — `SITE` in
-`astro.config.mjs`. Canonical URLs, the sitemap, `robots.txt` and every OG tag
-read from it.
+**After the domain is attached**, change the `SITE` and `BASE` defaults in
+`astro.config.mjs`. Canonical URLs, the sitemap, `robots.txt`, every OG tag and
+every internal link read from them.
 
 `public/_headers` sets the security headers and caches `/_astro/*` and `/fonts/*`
 immutably.

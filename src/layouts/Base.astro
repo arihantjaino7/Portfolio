@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { meta, person, links } from '../config/site';
 import { assets } from '../config/assets';
+import { withBase } from '../config/paths';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 
@@ -50,15 +51,37 @@ const personJsonLd = {
     {noindex && <meta name="robots" content="noindex, nofollow" />}
 
     <link rel="icon" href={assets.favicon} type="image/svg+xml" />
-    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
     <meta name="theme-color" content="#edeeea" />
     <meta name="color-scheme" content="light" />
     <meta name="author" content={person.name} />
 
     <link rel="preload" as="font" type="font/woff2" crossorigin
-      href="/fonts/archivo-latin-wght-normal.woff2" />
+      href={withBase('/fonts/archivo-latin-wght-normal.woff2')} />
     <link rel="preload" as="font" type="font/woff2" crossorigin
-      href="/fonts/jetbrains-mono-latin-wght-normal.woff2" />
+      href={withBase('/fonts/jetbrains-mono-latin-wght-normal.woff2')} />
+
+    <!--
+      @font-face lives here rather than in global.css because its src urls have
+      to carry the deploy base, and a stylesheet cannot read import.meta.env.
+      Inline also means the faces are declared without a second round trip.
+    -->
+    <style is:inline set:html={`
+      @font-face {
+        font-family: "Archivo Variable";
+        font-style: normal;
+        font-display: swap;
+        font-weight: 100 900;
+        src: url("${withBase('/fonts/archivo-latin-wght-normal.woff2')}") format("woff2-variations");
+      }
+      @font-face {
+        font-family: "JetBrains Mono Variable";
+        font-style: normal;
+        font-display: swap;
+        font-weight: 100 800;
+        src: url("${withBase('/fonts/jetbrains-mono-latin-wght-normal.woff2')}") format("woff2-variations");
+      }
+    `} />
 
     <meta property="og:site_name" content={person.name} />
     <meta property="og:type" content={ogType} />

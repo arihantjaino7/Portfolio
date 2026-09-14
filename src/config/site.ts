@@ -3,6 +3,8 @@
  * Components must not hard-code any of this.
  */
 
+import { withBase } from './paths';
+
 export const person = {
   name: 'Arihant Jain',
   /** The one line. Stated, not performed. */
@@ -25,8 +27,8 @@ export const links = {
 } as const;
 
 export const nav = [
-  { href: '/work', label: 'work' },
-  { href: '/about', label: 'about' },
+  { href: withBase('/work'), label: 'work' },
+  { href: withBase('/about'), label: 'about' },
 ] as const;
 
 export const meta = {

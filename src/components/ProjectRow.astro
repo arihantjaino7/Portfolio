@@ -7,6 +7,7 @@
  * which is why reduced-motion can simply return this document.
  */
 import { assets, ratio } from '../config/assets';
+import { withBase } from '../config/paths';
 
 interface Props {
   slug: string;
@@ -18,7 +19,7 @@ interface Props {
 }
 const { slug, title, year, summary, stack, index } = Astro.props;
 const media = assets.project(slug);
-const href = `/work/${slug}`;
+const href = withBase(`/work/${slug}`);
 ---
 
 <article class="entry" data-project={index}>
