@@ -1,10 +1,10 @@
 ---
 /**
  * Homepage — REDESIGN.md §1, §2. All six sections built: S1 landing, S2
- * achievements (sticky-stacked cards), S3 work (hover-reveal rows), S4 about,
- * S5 capabilities marquee, S6 outro. The generic engine (Reveal / data-count /
- * data-parallax / data-stack-item) does the animating; nothing here hand-rolls
- * a one-off tween.
+ * achievements (numbered expanding rows), S3 work (hover-reveal rows), S4
+ * about, S5 capabilities marquee, S6 outro. The generic engine (Reveal /
+ * data-count / data-parallax) does the animating; nothing here hand-rolls a
+ * one-off tween.
  */
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
@@ -53,27 +53,41 @@ const skillItems = skills.flatMap((g) => g.items);
     </div>
   </section>
 
-  <!-- S2 — achievements, sticky-stacked -->
+  <!-- S2 — achievements, numbered expanding rows -->
   <section id="achievements" class="dark-panel achievements">
-    <div class="shell achievements-head">
-      <Reveal as="h2" class="section-title" lines={['Achievements']} />
-      <span class="meta">({String(achievements.length).padStart(2, '0')})</span>
-    </div>
-    <div class="stack">
-      {
-        achievements.map((a, i) => (
-          <article class="stack-card" data-stack-item>
-            <div class="shell stack-inner">
-              <span class="meta stack-idx">{String(i + 1).padStart(2, '0')}.</span>
-              <p class="figure">{a.prefix}<span data-count={a.value}>{a.value}</span>{a.suffix}</p>
-              <h3 class="event">{a.event}</h3>
-              <p class="detail meta">
-                {a.detail} — {a.year}
-              </p>
-            </div>
-          </article>
-        ))
-      }
+    <div class="shell">
+      <div class="achievements-head">
+        <Reveal as="h2" class="section-title" lines={['Achievements']} />
+        <span class="meta">({String(achievements.length).padStart(2, '0')})</span>
+      </div>
+
+      <!--
+        <details> rather than a hand-rolled accordion: keyboard operable and
+        screen-reader labelled for free, open/close works with no JS at all,
+        and every row's detail text is in the DOM for a crawler whether or not
+        it is expanded. The first row starts open so the section reads as
+        content, not as three closed doors.
+      -->
+      <ol class="rows">
+        {
+          achievements.map((a, i) => (
+            <li>
+              <details class="row" open={i === 0}>
+                <summary class="row-head">
+                  <span class="row-index">{String(i + 1).padStart(2, '0')}.</span>
+                  <span class="row-figure">
+                    {a.prefix}<span data-count={a.value}>{a.value}</span>{a.suffix}
+                  </span>
+                  <h3 class="row-event">{a.event}</h3>
+                  <span class="row-year meta">{a.year}</span>
+                  <span class="row-arrow" aria-hidden="true">↙</span>
+                </summary>
+                <p class="row-detail">{a.detail}</p>
+              </details>
+            </li>
+          ))
+        }
+      </ol>
     </div>
   </section>
 
@@ -182,7 +196,7 @@ const skillItems = skills.flatMap((g) => g.items);
 
   <!--
     A handful of page-specific bits — a live clock (×2), a one-shot scroll
-    cue, click-to-copy email — unrelated to the reveal/parallax/count/stack
+    cue, click-to-copy email — unrelated to the reveal/parallax/count
     vocabulary motion.ts generalizes, so they aren't routed through that
     engine. Independent of prefers-reduced-motion: they update text and
     toggle classes, they don't animate. The mailto href is real from the
@@ -304,54 +318,130 @@ const skillItems = skills.flatMap((g) => g.items);
     margin: 0;
   }
 
-  /* ── S2 achievements — sticky stack ─────────────────────────── */
+  /* ── S2 achievements — numbered expanding rows ──────────────── */
+  .achievements {
+    padding-block: clamp(4rem, 12vh, 7rem);
+  }
+
   .achievements-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    padding-block: clamp(3rem, 10vh, 5.5rem);
+    margin-bottom: clamp(2rem, 6vh, 3.5rem);
   }
 
-  .stack {
-    position: relative;
+  .rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
-  .stack-card {
-    position: sticky;
-    top: 0;
-    min-height: 100svh;
-    display: flex;
-    align-items: center;
-    background: var(--color-ground);
+  .row {
     border-top: 1px solid var(--color-rule);
   }
 
-  .stack-inner {
-    width: 100%;
+  .rows li:last-child .row {
+    border-bottom: 1px solid var(--color-rule);
   }
 
-  .stack-idx {
-    display: block;
-    color: var(--color-accent);
-    margin-bottom: 1rem;
+  /* Fixed leading columns are what keep the index, the figure and the event
+     name landing on the same x across all three rows. */
+  .row-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "index year arrow"
+      "figure figure figure"
+      "event event event";
+    align-items: baseline;
+    gap: 0.4rem 1.5rem;
+    padding-block: clamp(1.25rem, 3.5vh, 2rem);
+    cursor: pointer;
+    list-style: none;
   }
 
-  .figure {
+  .row-head::-webkit-details-marker {
+    display: none;
+  }
+
+  @media (min-width: 860px) {
+    .row-head {
+      grid-template-columns: 4.5rem 9rem minmax(0, 1fr) auto auto;
+      grid-template-areas: "index figure event year arrow";
+      gap: 2rem;
+    }
+  }
+
+  .row-index {
+    grid-area: index;
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .row-figure {
+    grid-area: figure;
     font-family: var(--font-mono);
-    font-size: var(--text-figure);
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
     font-weight: 600;
-    margin: 0 0 0.75rem;
+    color: var(--color-accent);
+    white-space: nowrap;
   }
 
-  .event {
+  .row-event {
+    grid-area: event;
     font-size: var(--text-project);
-    font-weight: 500;
-    margin: 0 0 0.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
   }
 
-  .detail {
+  .row-year {
+    grid-area: year;
+    justify-self: end;
+  }
+
+  .row-arrow {
+    grid-area: arrow;
+    justify-self: end;
+    font-size: 1.25rem;
+    color: var(--color-muted);
+    transition: transform 300ms ease, color 300ms ease;
+  }
+
+  .row[open] .row-arrow {
+    transform: rotate(-90deg);
+    color: var(--color-accent);
+  }
+
+  .row-head:hover .row-event,
+  .row-head:focus-visible .row-event {
+    color: var(--color-accent);
+  }
+
+  .row-detail {
     margin: 0;
-    max-width: 40ch;
+    padding-bottom: clamp(1.5rem, 4vh, 2.5rem);
+    max-width: 48ch;
+    color: var(--color-muted);
+  }
+
+  @media (min-width: 860px) {
+    /* Line the detail up under the event name, not under the index. */
+    .row-detail {
+      margin-left: calc(4.5rem + 9rem + 4rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .row[open] .row-detail {
+      animation: row-open 320ms ease both;
+    }
+  }
+
+  @keyframes row-open {
+    from { opacity: 0; transform: translateY(-0.35rem); }
+    to { opacity: 1; transform: none; }
   }
 
   /* ── S3 work ─────────────────────────────────────────────────── */

@@ -13,7 +13,7 @@ export const person = {
   school: 'Amity University Noida',
   degree: 'B.Tech Computer Science',
   span: '2024 — 2028',
-  location: 'Noida, India',
+  location: 'Delhi, India',
   email: 'arihantjain4309@gmail.com',
 } as const;
 
