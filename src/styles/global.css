@@ -43,7 +43,7 @@
   /* Fluid type scale, 360px → 1440px. Display is new — the landing name and
      the outro line run edge-to-edge. The rest of the scale is pushed larger
      than the old paper-editorial build to carry a dark, motion-led page. */
-  --text-display: clamp(3rem, 13vw, 11rem);
+  --text-display: clamp(2.5rem, 9vw, 7.5rem);
   --text-hero: clamp(3rem, 12vw, 8rem);
   --text-chapter: clamp(2rem, 5.5vw, 3.5rem);
   --text-project: clamp(1.75rem, 4.5vw, 3rem);

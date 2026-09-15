@@ -6,31 +6,114 @@ const path = Astro.url.pathname;
 // slash — never bare '/'. Same BASE_URL normalization as paths.ts.
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const isHome = path.replace(/\/$/, '') === base;
+
+const items = [...nav, { href: links.email, label: 'email' }];
 ---
 
-<header class="border-b border-rule">
-  <div class="shell flex items-baseline justify-between gap-4 py-4">
+<header class="site-header">
+  <div class="shell header-inner">
     {
       isHome ? (
-        <span class="meta text-ink">{person.name.toLowerCase()}</span>
+        <span class="brand">{person.name.toLowerCase()}</span>
       ) : (
-        <a href={withBase('/')} class="meta text-ink u">{person.name.toLowerCase()}</a>
+        <a href={withBase('/')} class="brand brand-link">{person.name.toLowerCase()}</a>
       )
     }
-    <nav aria-label="Primary" class="flex items-baseline gap-5">
+    <nav aria-label="Primary" class="header-nav">
       {
-        nav.map((item) => (
+        items.map((item) => (
           <a
             href={item.href}
-            class="meta u"
-            aria-current={path.startsWith(item.href) ? 'page' : undefined}
-            style={path.startsWith(item.href) ? 'color: var(--color-ink)' : undefined}
+            class="header-link"
+            aria-current={
+              item.href.startsWith('mailto:') || !path.startsWith(item.href) ? undefined : 'page'
+            }
           >
             {item.label}
           </a>
         ))
       }
-      <a href={links.email} class="meta u">email</a>
     </nav>
   </div>
 </header>
+
+<style>
+  /* Every colour here reads a live token (--color-text / --color-muted /
+     --color-rule / --color-accent) rather than the --color-ink family:
+     Tailwind's @theme bakes those aliases to a static value, so they would not
+     follow a .dark-panel override if the header ever sits over one. */
+  .site-header {
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-block: 1.15rem;
+  }
+
+  .brand,
+  .header-link {
+    font-family: var(--font-mono);
+    /* Up from --text-meta (13px): the header was legible but recessive. */
+    font-size: 0.9375rem;
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+
+  .brand {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: clamp(1.25rem, 3vw, 2.25rem);
+  }
+
+  .header-link {
+    font-weight: 500;
+    /* Underline drawn as a background so it can thicken on hover without
+       shifting the text, matching global.css's `a.u`. */
+    background-image: linear-gradient(var(--color-rule), var(--color-rule));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 1px;
+    padding-bottom: 0.2em;
+    transition:
+      background-size 160ms ease,
+      background-image 160ms ease,
+      color 160ms ease;
+  }
+
+  .brand-link:hover,
+  .brand-link:focus-visible,
+  .header-link:hover,
+  .header-link:focus-visible {
+    color: var(--color-accent);
+  }
+
+  .header-link:hover,
+  .header-link:focus-visible,
+  .header-link[aria-current='page'] {
+    background-image: linear-gradient(var(--color-accent), var(--color-accent));
+    background-size: 100% 2px;
+  }
+
+  .header-link[aria-current='page'] {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 26rem) {
+    .header-nav {
+      gap: 1rem;
+    }
+    .brand,
+    .header-link {
+      font-size: 0.875rem;
+    }
+  }
+</style>

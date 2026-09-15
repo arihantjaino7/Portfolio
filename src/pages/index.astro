@@ -53,42 +53,52 @@ const skillItems = skills.flatMap((g) => g.items);
     </div>
   </section>
 
-  <!-- S2 — achievements, numbered expanding rows -->
+  <!-- S2 — achievements, sticky-stacked full-height panels -->
   <section id="achievements" class="dark-panel achievements">
-    <div class="shell">
-      <div class="achievements-head">
-        <Reveal as="h2" class="section-title" lines={['Achievements']} />
-        <span class="meta">({String(achievements.length).padStart(2, '0')})</span>
+    <div class="shell achievements-intro">
+      <Reveal as="h2" class="achievements-title" lines={['Achievements']} />
+      <div class="intro-row">
+        <span class="tag meta">({String(achievements.length).padStart(2, '0')})</span>
+        <Reveal as="p" class="achievements-lede" delay={0.1}>
+          Three ranked results from 2026. Scroll for the short version of each.
+        </Reveal>
       </div>
+    </div>
 
-      <!--
-        <details> rather than a hand-rolled accordion: keyboard operable and
-        screen-reader labelled for free, open/close works with no JS at all,
-        and every row's detail text is in the DOM for a crawler whether or not
-        it is expanded. The first row starts open so the section reads as
-        content, not as three closed doors.
-      -->
-      <ol class="rows">
-        {
-          achievements.map((a, i) => (
-            <li>
-              <details class="row" open={i === 0}>
-                <summary class="row-head">
-                  <span class="row-index">{String(i + 1).padStart(2, '0')}.</span>
-                  <span class="row-figure">
+    <!--
+      The stack effect is pure CSS `position: sticky` — each panel sticks one
+      head-height lower than the one before it, and carries an opaque ground so
+      the next panel occludes the previous panel's body while its head stays
+      pinned. No ScrollTrigger pinning, which means it behaves identically with
+      JS disabled and under prefers-reduced-motion: it is layout, not animation.
+      `--i` drives both the sticky offset and the panel height so the two can
+      never drift apart.
+    -->
+    <ol class="stack">
+      {
+        achievements.map((a, i) => (
+          <li class="stack-item" style={`--i:${i}`}>
+            <article class="ach">
+              <div class="ach-inner">
+                <div class="ach-head">
+                  <span class="ach-index">{String(i + 1).padStart(2, '0')}.</span>
+                  <span class="ach-figure">
                     {a.prefix}<span data-count={a.value}>{a.value}</span>{a.suffix}
                   </span>
-                  <h3 class="row-event">{a.event}</h3>
-                  <span class="row-year meta">{a.year}</span>
-                  <span class="row-arrow" aria-hidden="true">↙</span>
-                </summary>
-                <p class="row-detail">{a.detail}</p>
-              </details>
-            </li>
-          ))
-        }
-      </ol>
-    </div>
+                  <h3 class="ach-event">{a.event}</h3>
+                  <span class="ach-year meta">{a.year}</span>
+                  <span class="ach-arrow" aria-hidden="true">↙</span>
+                </div>
+                <div class="ach-body">
+                  <p class="ach-detail meta">{a.detail}</p>
+                  <p class="ach-blurb">{a.blurb}</p>
+                </div>
+              </div>
+            </article>
+          </li>
+        ))
+      }
+    </ol>
   </section>
 
   <!-- S3 — work -->
@@ -318,130 +328,174 @@ const skillItems = skills.flatMap((g) => g.items);
     margin: 0;
   }
 
-  /* ── S2 achievements — numbered expanding rows ──────────────── */
+  /* ── S2 achievements — sticky-stacked panels ────────────────── */
+  /* One set of column measures drives the head grid, the body indent and the
+     intro indent, so the index / figure / event / paragraph all land on the
+     same x down the whole section. */
   .achievements {
-    padding-block: clamp(4rem, 12vh, 7rem);
+    --col-index: 4.5rem;
+    --col-figure: 9rem;
+    --col-gap: 2rem;
+    --content-indent: calc(var(--col-index) + var(--col-figure) + var(--col-gap) * 2);
+    --head-h: 6.5rem;
   }
 
-  .achievements-head {
+  @media (min-width: 860px) {
+    .achievements {
+      --head-h: 7rem;
+    }
+  }
+
+  .achievements-intro {
+    padding-block: clamp(3.5rem, 13vh, 8rem) clamp(2rem, 7vh, 4rem);
+  }
+
+  .achievements-intro :global(.achievements-title) {
+    font-size: clamp(2.5rem, 9vw, 6.5rem);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.035em;
+    line-height: 0.92;
+    margin: 0;
+  }
+
+  .intro-row {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: clamp(2rem, 6vh, 3.5rem);
+    align-items: flex-start;
+    gap: 1rem;
+    margin-top: clamp(1.75rem, 5vh, 3rem);
   }
 
-  .rows {
+  @media (min-width: 860px) {
+    .intro-row {
+      padding-left: var(--content-indent);
+    }
+  }
+
+  .intro-row :global(.achievements-lede) {
+    margin: 0;
+    max-width: 44ch;
+    color: var(--color-muted);
+  }
+
+  .stack {
     list-style: none;
     margin: 0;
     padding: 0;
   }
 
-  .row {
-    border-top: 1px solid var(--color-rule);
+  .stack-item {
+    position: sticky;
+    top: calc(var(--i) * var(--head-h));
   }
 
-  .rows li:last-child .row {
+  .ach {
+    /* Each panel fills the viewport *below* the heads already stacked above
+       it, so no panel's content is pushed under the fold. */
+    min-height: calc(100svh - var(--i) * var(--head-h));
+    display: flex;
+    flex-direction: column;
+    /* Opaque ground is what makes the occlusion read — without it the panel
+       below would show through as this one scrolls over it. */
+    background: var(--color-ground);
+    border-top: 1px solid var(--color-rule);
+    padding-inline: var(--gutter);
+  }
+
+  .ach-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 84rem;
+    margin-inline: auto;
+  }
+
+  .ach-head {
+    height: var(--head-h);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "index figure year arrow"
+      "event event event event";
+    align-items: center;
+    gap: 0.25rem 1.25rem;
     border-bottom: 1px solid var(--color-rule);
   }
 
-  /* Fixed leading columns are what keep the index, the figure and the event
-     name landing on the same x across all three rows. */
-  .row-head {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas:
-      "index year arrow"
-      "figure figure figure"
-      "event event event";
-    align-items: baseline;
-    gap: 0.4rem 1.5rem;
-    padding-block: clamp(1.25rem, 3.5vh, 2rem);
-    cursor: pointer;
-    list-style: none;
-  }
-
-  .row-head::-webkit-details-marker {
-    display: none;
-  }
-
   @media (min-width: 860px) {
-    .row-head {
-      grid-template-columns: 4.5rem 9rem minmax(0, 1fr) auto auto;
+    .ach-head {
+      grid-template-columns: var(--col-index) var(--col-figure) minmax(0, 1fr) auto auto;
       grid-template-areas: "index figure event year arrow";
-      gap: 2rem;
+      gap: var(--col-gap);
     }
   }
 
-  .row-index {
+  .ach-index {
     grid-area: index;
     font-size: clamp(1.25rem, 2.5vw, 1.75rem);
     font-weight: 700;
     letter-spacing: -0.02em;
   }
 
-  .row-figure {
+  .ach-figure {
     grid-area: figure;
     font-family: var(--font-mono);
-    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-size: clamp(1.35rem, 2.6vw, 2rem);
     font-weight: 600;
     color: var(--color-accent);
     white-space: nowrap;
   }
 
-  .row-event {
+  .ach-event {
     grid-area: event;
-    font-size: var(--text-project);
+    /* Sized to keep the longest event name on one line inside a fixed-height
+       head — the head height is what the sticky offsets are computed from, so
+       it must not grow. */
+    font-size: clamp(1.35rem, 4vw, 2.75rem);
     font-weight: 600;
     letter-spacing: -0.02em;
+    line-height: 1.1;
     margin: 0;
   }
 
-  .row-year {
+  .ach-year {
     grid-area: year;
     justify-self: end;
   }
 
-  .row-arrow {
+  .ach-arrow {
     grid-area: arrow;
     justify-self: end;
     font-size: 1.25rem;
-    color: var(--color-muted);
-    transition: transform 300ms ease, color 300ms ease;
-  }
-
-  .row[open] .row-arrow {
-    transform: rotate(-90deg);
     color: var(--color-accent);
   }
 
-  .row-head:hover .row-event,
-  .row-head:focus-visible .row-event {
-    color: var(--color-accent);
-  }
-
-  .row-detail {
-    margin: 0;
-    padding-bottom: clamp(1.5rem, 4vh, 2.5rem);
-    max-width: 48ch;
-    color: var(--color-muted);
+  /* Top-aligned, not centred in the panel: the paragraph has to read as
+     belonging to the head directly above it. The space left below is the
+     region the next panel scrolls over first, so it is never dead for long. */
+  .ach-body {
+    padding-block: clamp(2rem, 8vh, 4.5rem) clamp(2rem, 6vh, 3.5rem);
   }
 
   @media (min-width: 860px) {
-    /* Line the detail up under the event name, not under the index. */
-    .row-detail {
-      margin-left: calc(4.5rem + 9rem + 4rem);
+    /* Line the paragraph up under the event name, not under the index. */
+    .ach-body {
+      padding-left: var(--content-indent);
     }
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .row[open] .row-detail {
-      animation: row-open 320ms ease both;
-    }
+  .ach-detail {
+    color: var(--color-accent);
+    margin: 0 0 1.25rem;
   }
 
-  @keyframes row-open {
-    from { opacity: 0; transform: translateY(-0.35rem); }
-    to { opacity: 1; transform: none; }
+  .ach-blurb {
+    margin: 0;
+    max-width: 46ch;
+    font-size: clamp(1.125rem, 1.6vw, 1.625rem);
+    line-height: 1.45;
+    color: var(--color-muted);
   }
 
   /* ── S3 work ─────────────────────────────────────────────────── */

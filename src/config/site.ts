@@ -56,6 +56,8 @@ export const achievements = [
     event: 'Amity Ideathon',
     year: '2026',
     detail: 'AI / Digital Technologies & Smart Systems',
+    blurb:
+      'First place in the AI / Digital Technologies & Smart Systems track — the result here that sits closest to what I build the rest of the year: multi-agent systems, and the plumbing that makes their output defensible.',
   },
   {
     prefix: '',
@@ -64,6 +66,8 @@ export const achievements = [
     event: 'OMNIKON National Hackathon',
     year: '2026',
     detail: 'of 3,000+ submissions nationwide',
+    blurb:
+      'Twelfth nationally, out of more than three thousand submissions. At that scale a placing says less about any single idea than about shipping something complete enough to be judged at all.',
   },
   {
     prefix: 'top ',
@@ -72,6 +76,8 @@ export const achievements = [
     event: 'Adobe Hackathon',
     year: '2026',
     detail: 'nationally',
+    blurb:
+      'Top six percent nationally. A percentile rather than a placing — the field was large enough that the bracket is the more honest number to quote.',
   },
 ] as const;
 
