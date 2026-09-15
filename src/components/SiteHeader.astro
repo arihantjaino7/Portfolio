@@ -62,6 +62,87 @@ const items = [...nav, { href: links.email, label: 'email' }];
   })();
 </script>
 
+<!--
+  Hide on scroll down, show on scroll up — except over the landing hero
+  (#landing, homepage only), where it always stays visible regardless of
+  direction. Upgrade only: the header is position: sticky in the CSS below
+  with no hidden state by default, so with this script absent (or under
+  reduced motion, which it's gated behind) it just stays pinned and visible,
+  which was already the correct, tested fallback before this existed.
+
+  Plain scroll listener rather than routing through motion.ts: that bundle is
+  homepage-only and GSAP/ScrollTrigger would be a lot of dependency for a
+  same-frame threshold comparison every other route doesn't need. is:inline
+  keeps this out of the bundle the same way the pill script above is.
+-->
+<script is:inline>
+  (function () {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var header = document.querySelector('.site-header');
+    if (!header) return;
+
+    // Absolute document position of the hero's own bottom edge, measured
+    // once and cached: comparing it to scrollY every tick is what lets
+    // "always visible over the landing" work without re-querying layout on
+    // each scroll event. Measured lazily rather than synchronously here:
+    // this script tag sits inside <header>, which the browser parses and
+    // runs *before* <main> — so #landing doesn't exist in the DOM yet at this
+    // point, and measuring eagerly would silently cache 0 forever. On routes
+    // with no #landing at all, this correctly settles on 0 — the header
+    // simply becomes eligible to hide from the top of the page, which is the
+    // right default for a page with no hero to stay pinned over.
+    var heroBottom = 0;
+    function measureHero() {
+      var hero = document.getElementById('landing');
+      heroBottom = hero ? hero.getBoundingClientRect().bottom + window.scrollY : 0;
+    }
+    measureHero();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', measureHero);
+    }
+    addEventListener('resize', measureHero);
+
+    var lastY = window.scrollY;
+    var hidden = false;
+    // Scroll noise (trackpad micro-deltas, rubber-banding) shouldn't flip the
+    // header on every tick — only a deliberate few px of travel should.
+    var THRESHOLD = 6;
+    var ticking = false;
+
+    function apply() {
+      ticking = false;
+      var y = Math.max(0, window.scrollY);
+      var delta = y - lastY;
+
+      var shouldHide = hidden;
+      if (y <= heroBottom) {
+        shouldHide = false;
+      } else if (delta > THRESHOLD) {
+        shouldHide = true;
+      } else if (delta < -THRESHOLD) {
+        shouldHide = false;
+      }
+
+      if (shouldHide !== hidden) {
+        hidden = shouldHide;
+        header.classList.toggle('header-hidden', hidden);
+      }
+      lastY = y;
+    }
+
+    addEventListener(
+      'scroll',
+      function () {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(apply);
+        }
+      },
+      { passive: true },
+    );
+  })();
+</script>
+
 <style>
   /* Every colour here reads a live token (--color-text / --color-ground /
      --color-rule) rather than the --color-ink family: Tailwind's @theme bakes
@@ -81,6 +162,14 @@ const items = [...nav, { href: links.email, label: 'email' }];
     z-index: 50;
     background: var(--color-ground);
     border-bottom: 1px solid var(--color-rule);
+    transition: transform 320ms ease;
+  }
+
+  /* Slid up by its own height rather than the viewport's: translateY(-100%)
+     is relative to the element's own box, so this holds exactly regardless
+     of the responsive height change at the 34rem breakpoint below. */
+  .site-header.header-hidden {
+    transform: translateY(-100%);
   }
 
   .header-inner {
