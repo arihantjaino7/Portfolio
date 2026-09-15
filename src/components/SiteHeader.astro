@@ -105,8 +105,11 @@ const items = [...nav, { href: links.email, label: 'email' }];
     overflow: hidden;
     display: inline-flex;
     align-items: center;
-    padding: 0.7rem 1.3rem;
-    border: 1px solid var(--color-text);
+    /* No border at rest — the pill only becomes visible as the fill arrives.
+       The 1px the border used to occupy moves into the padding so the box
+       keeps its size, and so `overflow` clips the fill to the full box rather
+       than leaving a hairline of page showing around it. */
+    padding: calc(0.7rem + 1px) calc(1.3rem + 1px);
     border-radius: 0.25rem;
     background: transparent;
     line-height: 1;
@@ -135,16 +138,12 @@ const items = [...nav, { href: links.email, label: 'email' }];
 
   .nav-pill-label {
     position: relative; /* above the fill */
-    /* Condensed grotesque, sized up from the sans it replaced: Oswald's
-       narrow letterfit reads smaller at the same px, and its caps are tall
-       enough that 0.875rem sits on the same visual line as Manrope's
-       0.8125rem. */
-    font-family: var(--font-condensed);
+    /* Matched to .brand exactly — same family, size, weight and tracking — so
+       the nav reads as the same voice as the wordmark across the bar. */
+    font-family: var(--font-mono);
     font-size: 0.9375rem;
-    /* 700 is the top of Oswald's variable weight axis. */
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     color: var(--color-text);
     /* Held back a beat so the letters flip once the fill has arrived under
        them, rather than greying out while it is still travelling. */
@@ -184,7 +183,6 @@ const items = [...nav, { href: links.email, label: 'email' }];
     }
     .nav-pill-label {
       font-size: 0.8125rem;
-      letter-spacing: 0.03em;
     }
     .brand {
       font-size: 0.8125rem;

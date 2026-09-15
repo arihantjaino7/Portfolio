@@ -12,8 +12,6 @@ const files = [
    'public/fonts/jetbrains-mono-latin-wght-normal.woff2'],
   ['node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2',
    'public/fonts/playfair-display-latin-wght-normal.woff2'],
-  ['node_modules/@fontsource-variable/oswald/files/oswald-latin-wght-normal.woff2',
-   'public/fonts/oswald-latin-wght-normal.woff2'],
 ];
 
 await mkdir('public/fonts', { recursive: true });
