@@ -12,6 +12,10 @@ const files = [
    'public/fonts/jetbrains-mono-latin-wght-normal.woff2'],
   ['node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2',
    'public/fonts/playfair-display-latin-wght-normal.woff2'],
+  // Anton ships a single weight, so it is a plain @fontsource package rather
+  // than an @fontsource-variable one — hence the different filename shape.
+  ['node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2',
+   'public/fonts/anton-latin-400-normal.woff2'],
 ];
 
 await mkdir('public/fonts', { recursive: true });

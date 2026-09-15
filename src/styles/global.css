@@ -43,6 +43,12 @@
      for display type only (achievements) — never for prose or UI. */
   --font-display: "Playfair Display Variable", ui-serif, Georgia, "Times New Roman",
     serif;
+  /* Ultra-condensed grotesque for the work section's project names, matching
+     that reference's headline face. The fallback stack names real condensed
+     faces rather than dropping to a normal-width sans, so the rows keep their
+     proportions if the webfont never lands. */
+  --font-compress: "Anton", "Archivo Narrow", "Roboto Condensed",
+    "Liberation Sans Narrow", "Arial Narrow", ui-sans-serif, sans-serif;
 
   /* Fluid type scale, 360px → 1440px. Display is new — the landing name and
      the outro line run edge-to-edge. The rest of the scale is pushed larger
