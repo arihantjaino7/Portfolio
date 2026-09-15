@@ -104,16 +104,13 @@ const skillItems = skills.flatMap((g) => g.items);
 
   <!-- S3 — work -->
   <section id="work" class="work-section">
-    <div class="shell work-inner">
+    <div class="work-inner">
       <div class="work-head">
         <Reveal as="h2" class="work-title" lines={['Projects']} />
-        <div class="work-lede">
-          <span class="tag meta">Case studies</span>
-          <p class="meta work-lede-copy">
-            What each system had to guarantee, and where that guarantee actually
-            lives.
-          </p>
-        </div>
+        <p class="work-lede-copy">
+          One keeps competition rules honest inside the database. The other
+          grades a target's security without sending it a single packet.
+        </p>
       </div>
 
       <!--
@@ -526,31 +523,40 @@ const skillItems = skills.flatMap((g) => g.items);
   /* ── S3 work ─────────────────────────────────────────────────── */
   /* Full height like the achievements section, but the rows sit at their
      natural size at the top rather than stretching to fill it — the empty
-     space below is deliberate room for projects that do not exist yet. */
+     space below is deliberate room for projects that do not exist yet.
+
+     This section deliberately does NOT use .shell: the rows are meant to run
+     almost the full width of the screen, and .shell would cap them at 84rem
+     and centre them. --work-pad is the thin margin left at the edges instead,
+     and the heading hugs the same left edge as the rows rather than sitting
+     on the centred grid the rest of the page uses. */
   .work-section {
+    --work-pad: clamp(0.75rem, 1.4vw, 1.5rem);
     min-height: calc(100svh - var(--header-h));
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding-block: clamp(3rem, 10vh, 6rem);
+    padding-block: clamp(4rem, 13vh, 8rem) clamp(3rem, 10vh, 6rem);
+    padding-inline: var(--work-pad);
   }
 
   .work-inner {
     width: 100%;
   }
 
+  /* Title left, lede held to a column on the right — at full width a plain
+     space-between would fling the lede to the far edge of a wide screen. */
   .work-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+    align-items: start;
     gap: 2rem;
-    flex-wrap: wrap;
-    margin-bottom: clamp(3rem, 14vh, 9rem);
+    margin-bottom: clamp(3rem, 12vh, 7rem);
   }
 
   .work-head :global(.work-title) {
     font-family: var(--font-compress);
-    font-size: clamp(2.75rem, 9vw, 7rem);
+    font-size: clamp(2.25rem, 6.5vw, 5rem);
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.01em;
@@ -558,21 +564,25 @@ const skillItems = skills.flatMap((g) => g.items);
     margin: 0;
   }
 
-  .work-lede {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    max-width: 34rem;
-  }
-
   .work-lede-copy {
     margin: 0;
-    max-width: 30ch;
-    /* Reads as prose, not as a label: .meta sizes it for a caption, and the
-       lede needs the body face at body size to sit beside a 7rem headline. */
+    max-width: 34ch;
+    justify-self: end;
+    /* Body face at body size: it has to read as prose beside the headline,
+       which .meta's caption sizing would not. */
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.45;
+    color: var(--color-muted);
+  }
+
+  @media (max-width: 54rem) {
+    .work-head {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .work-lede-copy {
+      justify-self: start;
+    }
   }
 
   .proj-rows {
@@ -592,8 +602,10 @@ const skillItems = skills.flatMap((g) => g.items);
     grid-template-areas:
       "meta thumb title icon"
       "meta thumb cta   icon";
-    column-gap: clamp(1rem, 2vw, 2rem);
-    padding: clamp(1.1rem, 2.6vh, 1.6rem) clamp(0.75rem, 1.5vw, 1.25rem);
+    column-gap: clamp(0.85rem, 1.6vw, 1.5rem);
+    /* Minimal inline padding so the row's text starts almost at the screen
+       edge and the slab runs nearly the full width behind it. */
+    padding: clamp(1rem, 2.4vh, 1.45rem) clamp(0.6rem, 1vw, 0.9rem);
     border-top: 1px solid var(--color-rule);
     color: inherit;
     isolation: isolate;
@@ -601,7 +613,7 @@ const skillItems = skills.flatMap((g) => g.items);
     overflow: hidden;
     border-radius: 0.5rem;
     transition: padding 480ms cubic-bezier(0.4, 0, 0.2, 1);
-    --meta-col: 17rem;
+    --meta-col: 13rem;
   }
 
   .proj:last-child .proj-link {
@@ -653,7 +665,7 @@ const skillItems = skills.flatMap((g) => g.items);
   .proj-title {
     grid-area: title;
     font-family: var(--font-compress);
-    font-size: clamp(1.5rem, 4.4vw, 3.25rem);
+    font-size: clamp(1.35rem, 3.2vw, 2.5rem);
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.01em;
