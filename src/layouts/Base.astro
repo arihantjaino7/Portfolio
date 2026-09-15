@@ -63,6 +63,11 @@ const personJsonLd = {
       href={withBase('/fonts/manrope-latin-wght-normal.woff2')} />
     <link rel="preload" as="font" type="font/woff2" crossorigin
       href={withBase('/fonts/jetbrains-mono-latin-wght-normal.woff2')} />
+    <!-- The header nav sits above the fold on every route, so this one is
+         preloaded too. Playfair deliberately is not — it only appears in the
+         achievements section, well down the homepage. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href={withBase('/fonts/oswald-latin-wght-normal.woff2')} />
 
     <!--
       @font-face lives here rather than in global.css because its src urls have
@@ -90,6 +95,13 @@ const personJsonLd = {
         font-display: swap;
         font-weight: 400 900;
         src: url("${withBase('/fonts/playfair-display-latin-wght-normal.woff2')}") format("woff2-variations");
+      }
+      @font-face {
+        font-family: "Oswald Variable";
+        font-style: normal;
+        font-display: swap;
+        font-weight: 200 700;
+        src: url("${withBase('/fonts/oswald-latin-wght-normal.woff2')}") format("woff2-variations");
       }
     `} />
 
