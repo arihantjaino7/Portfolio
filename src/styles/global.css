@@ -39,6 +39,10 @@
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo,
     Consolas, "Liberation Mono", monospace;
+  /* High-contrast display serif, matching the reference's headline face. Used
+     for display type only (achievements) — never for prose or UI. */
+  --font-display: "Playfair Display Variable", ui-serif, Georgia, "Times New Roman",
+    serif;
 
   /* Fluid type scale, 360px → 1440px. Display is new — the landing name and
      the outro line run edge-to-edge. The rest of the scale is pushed larger
@@ -233,15 +237,22 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
    zero GSAP/Lenis ever fetched. motion.ts finds elements already sitting in
    this state and animates *out* of it; it never has to compute "hidden".
    ───────────────────────────────────────────────────────────── */
+/* Gated on .motion-pending, which the inline script in index.astro adds before
+   first paint — so it exists only where JS actually ran. Without that gate a
+   reader with JS disabled gets the hidden half and nothing to animate them out
+   of it, leaving the hero name and statement permanently masked. motion.ts
+   drops the class once GSAP has wired each element (its own inline styles hold
+   the hidden state from then on), and index.astro arms a failsafe that drops
+   it too if the motion bundle never arrives. */
 @media (prefers-reduced-motion: no-preference) {
-  [data-reveal="lines"] .reveal-line-inner {
+  .motion-pending [data-reveal="lines"] .reveal-line-inner {
     transform: translateY(110%);
   }
-  [data-reveal="clip"] {
+  .motion-pending [data-reveal="clip"] {
     clip-path: inset(100% 0 0 0);
   }
-  [data-reveal="clip"] img,
-  [data-reveal="clip"] video {
+  .motion-pending [data-reveal="clip"] img,
+  .motion-pending [data-reveal="clip"] video {
     transform: scale(1.15);
   }
 }

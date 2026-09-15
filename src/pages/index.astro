@@ -30,6 +30,14 @@ const skillItems = skills.flatMap((g) => g.items);
   <script is:inline>
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.classList.add('motion-pending');
+      // Failsafe: if the motion bundle never lands (offline, blocked, parse
+      // error) nothing would ever animate the reveals out of their hidden
+      // state, so drop the gate and show the finished layout instead. motion.ts
+      // clears the class itself as soon as it has wired the elements, which
+      // makes this a no-op on the normal path.
+      setTimeout(function () {
+        document.documentElement.classList.remove('motion-pending');
+      }, 4000);
     }
   </script>
 
@@ -57,12 +65,6 @@ const skillItems = skills.flatMap((g) => g.items);
   <section id="achievements" class="dark-panel achievements">
     <div class="shell achievements-intro">
       <Reveal as="h2" class="achievements-title" lines={['Achievements']} />
-      <div class="intro-row">
-        <span class="tag meta">({String(achievements.length).padStart(2, '0')})</span>
-        <Reveal as="p" class="achievements-lede" delay={0.1}>
-          Three ranked results from 2026. Scroll for the short version of each.
-        </Reveal>
-      </div>
     </div>
 
     <!--
@@ -87,7 +89,6 @@ const skillItems = skills.flatMap((g) => g.items);
                   </span>
                   <h3 class="ach-event">{a.event}</h3>
                   <span class="ach-year meta">{a.year}</span>
-                  <span class="ach-arrow" aria-hidden="true">↙</span>
                 </div>
                 <div class="ach-body">
                   <p class="ach-detail meta">{a.detail}</p>
@@ -350,32 +351,17 @@ const skillItems = skills.flatMap((g) => g.items);
     padding-block: clamp(3.5rem, 13vh, 8rem) clamp(2rem, 7vh, 4rem);
   }
 
+  /* Display serif, tracked normally: a high-contrast face like this needs its
+     own letter-fit, and the negative tracking the sans headings use closes the
+     hairlines up until they break. */
   .achievements-intro :global(.achievements-title) {
-    font-size: clamp(2.5rem, 9vw, 6.5rem);
-    font-weight: 800;
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 8vw, 5.75rem);
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: -0.035em;
-    line-height: 0.92;
+    letter-spacing: 0.005em;
+    line-height: 0.98;
     margin: 0;
-  }
-
-  .intro-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-top: clamp(1.75rem, 5vh, 3rem);
-  }
-
-  @media (min-width: 860px) {
-    .intro-row {
-      padding-left: var(--content-indent);
-    }
-  }
-
-  .intro-row :global(.achievements-lede) {
-    margin: 0;
-    max-width: 44ch;
-    color: var(--color-muted);
   }
 
   .stack {
@@ -414,10 +400,10 @@ const skillItems = skills.flatMap((g) => g.items);
   .ach-head {
     height: var(--head-h);
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      "index figure year arrow"
-      "event event event event";
+      "index figure year"
+      "event event event";
     align-items: center;
     gap: 0.25rem 1.25rem;
     border-bottom: 1px solid var(--color-rule);
@@ -425,15 +411,15 @@ const skillItems = skills.flatMap((g) => g.items);
 
   @media (min-width: 860px) {
     .ach-head {
-      grid-template-columns: var(--col-index) var(--col-figure) minmax(0, 1fr) auto auto;
-      grid-template-areas: "index figure event year arrow";
+      grid-template-columns: var(--col-index) var(--col-figure) minmax(0, 1fr) auto;
+      grid-template-areas: "index figure event year";
       gap: var(--col-gap);
     }
   }
 
   .ach-index {
     grid-area: index;
-    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    font-size: clamp(1.125rem, 2.2vw, 1.5rem);
     font-weight: 700;
     letter-spacing: -0.02em;
   }
@@ -441,7 +427,7 @@ const skillItems = skills.flatMap((g) => g.items);
   .ach-figure {
     grid-area: figure;
     font-family: var(--font-mono);
-    font-size: clamp(1.35rem, 2.6vw, 2rem);
+    font-size: clamp(1.2rem, 2.3vw, 1.75rem);
     font-weight: 600;
     color: var(--color-accent);
     white-space: nowrap;
@@ -451,10 +437,12 @@ const skillItems = skills.flatMap((g) => g.items);
     grid-area: event;
     /* Sized to keep the longest event name on one line inside a fixed-height
        head — the head height is what the sticky offsets are computed from, so
-       it must not grow. */
-    font-size: clamp(1.35rem, 4vw, 2.75rem);
-    font-weight: 600;
-    letter-spacing: -0.02em;
+       it must not grow. The serif sets wider than the sans it replaced, so the
+       ceiling here is lower than the type scale would otherwise suggest. */
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 3.4vw, 2.375rem);
+    font-weight: 500;
+    letter-spacing: 0;
     line-height: 1.1;
     margin: 0;
   }
@@ -462,13 +450,6 @@ const skillItems = skills.flatMap((g) => g.items);
   .ach-year {
     grid-area: year;
     justify-self: end;
-  }
-
-  .ach-arrow {
-    grid-area: arrow;
-    justify-self: end;
-    font-size: 1.25rem;
-    color: var(--color-accent);
   }
 
   /* Top-aligned, not centred in the panel: the paragraph has to read as
@@ -492,9 +473,9 @@ const skillItems = skills.flatMap((g) => g.items);
 
   .ach-blurb {
     margin: 0;
-    max-width: 46ch;
-    font-size: clamp(1.125rem, 1.6vw, 1.625rem);
-    line-height: 1.45;
+    max-width: 48ch;
+    font-size: clamp(1.0625rem, 1.35vw, 1.375rem);
+    line-height: 1.5;
     color: var(--color-muted);
   }
 
