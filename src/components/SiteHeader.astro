@@ -150,6 +150,30 @@ const items = [...nav, { href: links.email, label: 'email' }];
     transition: color 180ms ease 200ms;
   }
 
+  /* Drawn as a pseudo-element rather than the background-image underline the
+     old header links used: that needs padding-bottom to clear the text, which
+     would push the label off-centre inside the pill. */
+  .nav-pill-label::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.32em;
+    height: 1px;
+    background: var(--color-rule);
+    transition: background 180ms ease 200ms;
+  }
+
+  .nav-pill:hover .nav-pill-label::after,
+  .nav-pill:focus-visible .nav-pill-label::after,
+  .nav-pill[aria-current='page'] .nav-pill-label::after {
+    background: var(--color-ground);
+  }
+
+  .nav-pill[aria-current='page'] .nav-pill-label::after {
+    transition: none;
+  }
+
   .nav-pill:hover::before,
   .nav-pill:focus-visible::before,
   .nav-pill[aria-current='page']::before {
