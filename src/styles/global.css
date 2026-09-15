@@ -258,27 +258,18 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Section snapping. `mandatory` is what makes the page come to rest on a
-   section rather than halfway between two, which is the whole point — but it
-   would normally make a section taller than the viewport impossible to stop
-   inside. The spec's oversized-snap-area rule is what saves the achievements
-   stack: once the viewport sits entirely within a snap area taller than
-   itself, that area counts as aligned at every offset, so those three screens
-   scroll freely while every other boundary still snaps hard.
-
-   This is also why Lenis was removed (see src/scripts/motion.ts): snapping is
-   driven by native scroll gestures, and a library animating scrollTop from JS
-   overrides it.
+   Scroll snapping was tried here and pulled back out — a hard stop on every
+   section read as a jarring full-page jump rather than a scroll. The page is
+   free-scrolling again. --header-h survives, unrelated to snapping: the
+   header is still position: sticky (SiteHeader.astro) and permanently
+   occupies that band of the viewport whenever it's shown, so the achievements
+   stack's sticky offsets and every full-height section still have to account
+   for it regardless of how the page scrolls.
    ───────────────────────────────────────────────────────────── */
 :root {
   /* SiteHeader.astro's rendered height at each of its own breakpoints (74px
      desktop, 66px from its 34rem breakpoint down) — both rounded up a couple
-     of px from the measured height as slack against sub-pixel layout, never
-     down, since under-reserving is what reproduces the bug this exists to
-     fix. Consumed below by scroll-padding-top, and by index.astro's
-     achievements stack, which has to sink its own sticky offsets by the same
-     amount now that the header permanently occupies that band of the
-     viewport. */
+     of px from the measured height as slack against sub-pixel layout. */
   --header-h: 74px;
 }
 
@@ -286,18 +277,6 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
   :root {
     --header-h: 66px;
   }
-}
-
-html {
-  scroll-snap-type: y mandatory;
-  /* Reserves room for the sticky header at the top of the snap viewport, so
-     "start" alignment lands a section's top just below the header rather than
-     underneath it. */
-  scroll-padding-top: var(--header-h);
-}
-
-.snap-section {
-  scroll-snap-align: start;
 }
 
 @media (prefers-reduced-motion: no-preference) {
