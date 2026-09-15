@@ -26,6 +26,12 @@ const work = defineCollection({
     year: z.number().int(),
     /** One line, used on the home page and in meta descriptions. */
     summary: z.string(),
+    /**
+     * Two or three words naming what the thing *is*, shown beside the year in
+     * the home page's work rows ("2026, SECURITY SCANNER"). Optional so a new
+     * case study renders without it rather than failing the build.
+     */
+    category: z.string().optional(),
     role: z.string(),
     team: z.string().optional(),
     /** Ascending. Controls home-page and /work ordering. */

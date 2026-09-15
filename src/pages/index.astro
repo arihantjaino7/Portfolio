@@ -104,18 +104,35 @@ const skillItems = skills.flatMap((g) => g.items);
 
   <!-- S3 — work -->
   <section id="work" class="work-section">
-    <div class="shell">
+    <div class="shell work-inner">
       <div class="work-head">
-        <Reveal as="h2" class="section-title" lines={['Work']} />
-        <span class="meta">{String(projects.length).padStart(2, '0')} case studies</span>
+        <Reveal as="h2" class="work-title" lines={['Projects']} />
+        <div class="work-lede">
+          <span class="tag meta">Case studies</span>
+          <p class="meta work-lede-copy">
+            What each system had to guarantee, and where that guarantee actually
+            lives.
+          </p>
+        </div>
       </div>
-      <ol class="project-rows">
+
+      <!--
+        One <a> per row and nothing interactive inside it: the reference puts a
+        "live website" button in the hovered panel, but the whole row already
+        navigates to the case study, so nesting a second link there would be
+        invalid markup for no added destination. The pill is a presentational
+        affordance instead, and the arrow is decorative.
+      -->
+      <ol class="proj-rows">
         {
-          projects.map((p, i) => (
-            <li>
-              <a class="project-row" href={withBase(`/work/${p.id}`)}>
-                <span class="meta idx">{String(i + 1).padStart(2, '0')}</span>
-                <span class="project-thumb frame" aria-hidden="true">
+          projects.map((p) => (
+            <li class="proj">
+              <a class="proj-link" href={withBase(`/work/${p.id}`)}>
+                <span class="proj-panel" aria-hidden="true" />
+                <span class="proj-meta meta">
+                  {p.data.category ? `${p.data.year}, ${p.data.category}` : String(p.data.year)}
+                </span>
+                <span class="proj-thumb" aria-hidden="true">
                   <img
                     src={assets.project(p.id).shot1}
                     alt=""
@@ -125,16 +142,34 @@ const skillItems = skills.flatMap((g) => g.items);
                     decoding="async"
                   />
                 </span>
-                <span class="project-title">{p.data.title}</span>
-                <span class="project-row-meta meta">
-                  <span class="project-view">View case →</span>
-                  <span>{p.data.year}</span>
-                </span>
+                {/*
+                  Split per character so each letter can roll to its own light
+                  copy on a stagger. aria-label carries the real title and every
+                  fragment is aria-hidden, so a screen reader gets one word
+                  rather than a stream of single letters.
+                */}
+                <h3 class="proj-title" aria-label={p.data.title}>
+                  {[...p.data.title].map((ch, ci) =>
+                    ch === ' ' ? (
+                      <span class="ch-space" aria-hidden="true">
+                        &nbsp;
+                      </span>
+                    ) : (
+                      <span class="ch" style={`--c:${ci}`} aria-hidden="true">
+                        <span class="ch-a">{ch}</span>
+                        <span class="ch-b">{ch}</span>
+                      </span>
+                    ),
+                  )}
+                </h3>
+                <span class="proj-icon" aria-hidden="true">↗</span>
+                <span class="proj-cta meta" aria-hidden="true">↗ View case</span>
               </a>
             </li>
           ))
         }
       </ol>
+
       <a class="meta u all-work" href={withBase('/work')}>All work →</a>
     </div>
   </section>
@@ -489,92 +524,295 @@ const skillItems = skills.flatMap((g) => g.items);
   }
 
   /* ── S3 work ─────────────────────────────────────────────────── */
-  /* Full height so it holds a snap stop on its own rather than resting with
-     dead space under it. Reduced by --header-h for the same reason as
-     .screen above: the sticky header eats that band of the viewport
-     permanently, so a raw 100svh would run past the visible fold. */
+  /* Full height like the achievements section, but the rows sit at their
+     natural size at the top rather than stretching to fill it — the empty
+     space below is deliberate room for projects that do not exist yet. */
   .work-section {
     min-height: calc(100svh - var(--header-h));
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: flex-start;
     padding-block: clamp(3rem, 10vh, 6rem);
+  }
+
+  .work-inner {
+    width: 100%;
   }
 
   .work-head {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: clamp(1.5rem, 4vh, 3rem);
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: clamp(3rem, 14vh, 9rem);
   }
 
-  .project-rows {
+  .work-head :global(.work-title) {
+    font-family: var(--font-compress);
+    font-size: clamp(2.75rem, 9vw, 7rem);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 0.92;
+    margin: 0;
+  }
+
+  .work-lede {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    max-width: 34rem;
+  }
+
+  .work-lede-copy {
+    margin: 0;
+    max-width: 30ch;
+    /* Reads as prose, not as a label: .meta sizes it for a caption, and the
+       lede needs the body face at body size to sit beside a 7rem headline. */
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  .proj-rows {
     list-style: none;
     margin: 0;
     padding: 0;
   }
 
-  .project-row {
+  .proj-link {
     position: relative;
-    display: flex;
+    display: grid;
     align-items: center;
-    gap: 1.5rem;
-    padding-block: clamp(1.5rem, 4vh, 2.25rem);
+    /* meta | thumb | title | arrow, with the CTA on a second row under the
+       title. The thumb column is 0 until hover, which is what slides the
+       title across as the panel arrives. */
+    grid-template-columns: minmax(0, var(--meta-col)) auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "meta thumb title icon"
+      "meta thumb cta   icon";
+    column-gap: clamp(1rem, 2vw, 2rem);
+    padding: clamp(1.1rem, 2.6vh, 1.6rem) clamp(0.75rem, 1.5vw, 1.25rem);
     border-top: 1px solid var(--color-rule);
     color: inherit;
+    isolation: isolate;
+    /* Clips the skewed slab's slanted ends, and rounds the panel with it. */
+    overflow: hidden;
+    border-radius: 0.5rem;
+    transition: padding 480ms cubic-bezier(0.4, 0, 0.2, 1);
+    --meta-col: 17rem;
   }
 
-  .project-row .idx {
-    flex-shrink: 0;
-    width: 2rem;
-  }
-
-  .project-rows li:last-child .project-row {
+  .proj:last-child .proj-link {
     border-bottom: 1px solid var(--color-rule);
   }
 
-  .project-title {
-    font-size: var(--text-project);
-    font-weight: 500;
-    transition: transform 400ms ease;
-  }
-
-  .project-row-meta {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .project-view {
-    opacity: 0;
-    transition: opacity 300ms ease;
-  }
-
-  .project-thumb {
+  /* The fill, and the first half of what distinguishes this section from the
+     header's radial one: a *skewed* slab that sweeps in from the left, so the
+     leading edge arrives on a diagonal and the row reads as being struck
+     rather than filled. Over-wide and over-tall so the slanted ends never
+     expose a corner; .proj-link's overflow does the clipping. */
+  .proj-panel {
     position: absolute;
-    left: 4.5rem;
-    width: 8rem;
-    aspect-ratio: 16 / 9;
-    opacity: 0;
-    transform: scale(0.92);
-    transition: opacity 350ms ease, transform 350ms ease;
-    pointer-events: none;
+    inset: -1px -12%;
+    z-index: -1;
+    background: var(--color-text);
+    /* Just past its own width — enough to sit fully off the left edge, and no
+       further. Over-travelling spends the first third of the duration moving
+       through nothing, which reads as lag before the slab appears. */
+    transform: translateX(-101%) skewX(-9deg);
+    transition: transform 620ms cubic-bezier(0.5, 0.05, 0.25, 1);
   }
 
+  .proj-meta {
+    grid-area: meta;
+    transition: color 260ms ease 120ms;
+  }
+
+  /* Width, not opacity: the column has to actually open up and push the title
+     across, which is the movement that sells the row expanding. */
+  .proj-thumb {
+    grid-area: thumb;
+    width: 0;
+    overflow: hidden;
+    border-radius: 0.25rem;
+    transition:
+      width 520ms cubic-bezier(0.62, 0.04, 0.3, 1),
+      opacity 300ms ease 140ms;
+    opacity: 0;
+  }
+
+  .proj-thumb img {
+    width: 11rem;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    display: block;
+  }
+
+  .proj-title {
+    grid-area: title;
+    font-family: var(--font-compress);
+    font-size: clamp(1.5rem, 4.4vw, 3.25rem);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1.02;
+    margin: 0;
+  }
+
+  /* The second half of the effect: every letter is two stacked copies, a dark
+     one sitting in place and a light one waiting below. On hover both rise by
+     exactly one line, so the title doesn't fade or recolour — each glyph rolls
+     over to its light twin, left to right, just behind the slab's edge. */
+  .ch {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  .ch-space {
+    display: inline-block;
+  }
+
+  .ch-a,
+  .ch-b {
+    display: block;
+    transition: transform 600ms cubic-bezier(0.62, 0.04, 0.3, 1);
+    /* Staggered off the character's index, so the roll chases the slab across
+       the row rather than flipping the whole word at once. */
+    transition-delay: calc(var(--c) * 26ms);
+  }
+
+  .ch-b {
+    position: absolute;
+    inset: 0;
+    transform: translateY(100%);
+    color: var(--color-ground);
+  }
+
+  /* global.css zeroes transition *duration* under reduced motion but not
+     delay, which would otherwise leave the letters trickling over one by one
+     on a stagger that no longer has any motion to justify it. */
+  @media (prefers-reduced-motion: reduce) {
+    .ch-a,
+    .ch-b {
+      transition-delay: 0s;
+    }
+  }
+
+  .proj-icon {
+    grid-area: icon;
+    justify-self: end;
+    font-size: 1.15rem;
+    color: var(--color-muted);
+    transition: color 260ms ease 120ms, transform 380ms ease;
+  }
+
+  /* max-height rather than a 0fr/1fr grid row: universally supported, and the
+     row only ever holds one line so the ceiling is easy to bound honestly. */
+  .proj-cta {
+    grid-area: cta;
+    justify-self: start;
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateY(0.4rem);
+    border: 1px solid transparent;
+    border-radius: 0.3rem;
+    transition:
+      max-height 420ms cubic-bezier(0.4, 0, 0.2, 1),
+      margin-top 420ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 260ms ease 200ms,
+      transform 380ms ease 200ms,
+      padding 420ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Hover only where there is a real pointer; keyboard focus gets the same
+     treatment through :focus-visible so the row is not a dead end for it. */
   @media (hover: hover) and (pointer: fine) {
-    .project-row:hover .project-thumb,
-    .project-row:focus-visible .project-thumb {
-      opacity: 1;
-      transform: scale(1);
+    .proj-link:hover,
+    .proj-link:focus-visible {
+      padding-block: clamp(1.6rem, 4vh, 2.5rem);
     }
-    .project-row:hover .project-title,
-    .project-row:focus-visible .project-title {
-      transform: translateX(9.5rem);
+
+    .proj-link:hover .proj-panel,
+    .proj-link:focus-visible .proj-panel {
+      transform: translateX(0) skewX(-9deg);
     }
-    .project-row:hover .project-view,
-    .project-row:focus-visible .project-view {
+
+    .proj-link:hover .ch-a,
+    .proj-link:focus-visible .ch-a {
+      transform: translateY(-100%);
+    }
+
+    .proj-link:hover .ch-b,
+    .proj-link:focus-visible .ch-b {
+      transform: translateY(0);
+    }
+
+    .proj-link:hover .proj-thumb,
+    .proj-link:focus-visible .proj-thumb {
+      width: 11rem;
       opacity: 1;
+    }
+
+    /* The title is deliberately absent here — its letters carry their own
+       light copy and roll to it, so recolouring the element would flip the
+       half that hasn't rolled yet. */
+    .proj-link:hover .proj-meta,
+    .proj-link:focus-visible .proj-meta,
+    .proj-link:hover .proj-icon,
+    .proj-link:focus-visible .proj-icon {
+      color: var(--color-ground);
+    }
+
+    .proj-link:hover .proj-icon,
+    .proj-link:focus-visible .proj-icon {
+      transform: translate(0.15rem, -0.15rem);
+    }
+
+    .proj-link:hover .proj-cta,
+    .proj-link:focus-visible .proj-cta {
+      max-height: 3rem;
+      margin-top: 0.9rem;
+      padding: 0.45rem 0.85rem;
+      opacity: 1;
+      transform: translateY(0);
+      color: var(--color-ground);
+      border-color: rgba(242, 241, 237, 0.35);
+    }
+  }
+
+  @media (max-width: 54rem) {
+    .proj-link {
+      --meta-col: 7.5rem;
+      grid-template-columns: minmax(0, var(--meta-col)) auto minmax(0, 1fr) auto;
+    }
+    .proj-thumb img {
+      width: 6.5rem;
+    }
+    .proj-link:hover .proj-thumb,
+    .proj-link:focus-visible .proj-thumb {
+      width: 6.5rem;
+    }
+  }
+
+  /* Below this the meta and the title cannot share a line without the title
+     shrinking past legibility, so the row stacks and the thumb drops out. */
+  @media (max-width: 34rem) {
+    .proj-link {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "meta icon"
+        "title title"
+        "cta   cta";
+      row-gap: 0.4rem;
+    }
+    .proj-thumb {
+      display: none;
     }
   }
 
