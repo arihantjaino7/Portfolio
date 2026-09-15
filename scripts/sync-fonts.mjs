@@ -6,8 +6,8 @@
 import { copyFile, mkdir } from 'node:fs/promises';
 
 const files = [
-  ['node_modules/@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2',
-   'public/fonts/archivo-latin-wght-normal.woff2'],
+  ['node_modules/@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2',
+   'public/fonts/manrope-latin-wght-normal.woff2'],
   ['node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2',
    'public/fonts/jetbrains-mono-latin-wght-normal.woff2'],
 ];

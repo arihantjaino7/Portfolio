@@ -6,7 +6,7 @@ mkdir -p "$HOME/.local/share/fonts"
 node -e "
 const w=require('wawoff2'), fs=require('fs');
 (async()=>{for(const [s,d] of [
-  ['public/fonts/archivo-latin-wght-normal.woff2','Archivo.ttf'],
+  ['public/fonts/manrope-latin-wght-normal.woff2','Manrope.ttf'],
   ['public/fonts/jetbrains-mono-latin-wght-normal.woff2','JetBrainsMono.ttf']]){
   fs.writeFileSync(process.env.HOME+'/.local/share/fonts/'+d, Buffer.from(await w.decompress(fs.readFileSync(s))));
 }})();"

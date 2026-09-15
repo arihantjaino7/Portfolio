@@ -8,7 +8,7 @@
  *   npm run assets           regenerate everything
  *   npm run assets -- --og   OG cards only
  *
- * Fonts: requires Archivo and JetBrains Mono installed for fontconfig. See
+ * Fonts: requires Manrope and JetBrains Mono installed for fontconfig. See
  * scripts/install-fonts.sh.
  */
 import sharp from 'sharp';
@@ -22,7 +22,7 @@ const INK_SOFT = '#5b6067';
 const RULE = '#cbcdc6';
 const MARK = '#22389e';
 
-const SANS = 'Archivo SemiBold, DejaVu Sans, sans-serif';
+const SANS = 'Manrope, DejaVu Sans, sans-serif';
 const MONO = 'JetBrains Mono, DejaVu Sans Mono, monospace';
 
 const esc = (s) =>
