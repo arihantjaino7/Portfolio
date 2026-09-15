@@ -218,6 +218,9 @@ export async function initMotion() {
   });
 
   root.classList.add('motion');
+  // Every reveal now carries GSAP's own inline "from" state, so the CSS gate
+  // has done its job and can go — which also disarms index.astro's failsafe.
+  root.classList.remove('motion-pending');
 
   ScrollTrigger.refresh();
   // Webfonts land after first paint and change the height of everything.
