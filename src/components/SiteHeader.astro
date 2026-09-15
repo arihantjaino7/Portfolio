@@ -67,7 +67,19 @@ const items = [...nav, { href: links.email, label: 'email' }];
      --color-rule) rather than the --color-ink family: Tailwind's @theme bakes
      those aliases to a static value, so they would not follow a .dark-panel
      override if the header ever sits over one. */
+  /* Pinned so scroll snapping can't carry it off-screen: a snapped section's
+     top lands flush with the viewport top, and the header sits above that
+     section in normal flow, so without this it scrolls fully out of view the
+     instant any snap fires — including on load. --color-ground is read here
+     unconditionally rather than the section-local var(--color-ground): the
+     header sits outside every .dark-panel wrapper, so this always resolves to
+     the light value regardless of what it is currently floating over, and
+     needs to paint over that content rather than pick up its theme. */
   .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--color-ground);
     border-bottom: 1px solid var(--color-rule);
   }
 
