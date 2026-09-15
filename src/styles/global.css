@@ -43,11 +43,6 @@
      for display type only (achievements) — never for prose or UI. */
   --font-display: "Playfair Display Variable", ui-serif, Georgia, "Times New Roman",
     serif;
-  /* Bold condensed grotesque for the header nav pills. The fallback stack
-     names real condensed faces rather than falling back to a normal-width
-     sans, so the pills keep their proportions if the webfont never lands. */
-  --font-condensed: "Oswald Variable", "Archivo Narrow", "Roboto Condensed",
-    "Liberation Sans Narrow", "Arial Narrow", ui-sans-serif, sans-serif;
 
   /* Fluid type scale, 360px → 1440px. Display is new — the landing name and
      the outro line run edge-to-edge. The rest of the scale is pushed larger
@@ -239,7 +234,7 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
    *hidden* half of each reveal, gated on `(prefers-reduced-motion:
    no-preference)` rather than a JS-added class — so a reduced-motion reader
    gets the finished, unhidden layout with zero risk of a class race, and
-   zero GSAP/Lenis ever fetched. motion.ts finds elements already sitting in
+   zero GSAP ever fetched. motion.ts finds elements already sitting in
    this state and animates *out* of it; it never has to compute "hidden".
    ───────────────────────────────────────────────────────────── */
 /* Gated on .motion-pending, which the inline script in index.astro adds before
@@ -262,12 +257,30 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
   }
 }
 
-/* Lenis owns the scroll position while it is running. */
-html.lenis,
-html.lenis body { height: auto; }
-html.lenis.lenis-smooth { scroll-behavior: auto !important; }
-html.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-html.lenis.lenis-stopped { overflow: hidden; }
+/* ─────────────────────────────────────────────────────────────
+   Section snapping. `mandatory` is what makes the page come to rest on a
+   section rather than halfway between two, which is the whole point — but it
+   would normally make a section taller than the viewport impossible to stop
+   inside. The spec's oversized-snap-area rule is what saves the achievements
+   stack: once the viewport sits entirely within a snap area taller than
+   itself, that area counts as aligned at every offset, so those three screens
+   scroll freely while every other boundary still snaps hard.
+
+   This is also why Lenis was removed (see src/scripts/motion.ts): snapping is
+   driven by native scroll gestures, and a library animating scrollTop from JS
+   overrides it.
+   ───────────────────────────────────────────────────────────── */
+html {
+  scroll-snap-type: y mandatory;
+}
+
+.snap-section {
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 
 /* Belt-and-braces: prefers-reduced-motion also kills any transition/animation
    duration that slipped in outside the gated rules above. */

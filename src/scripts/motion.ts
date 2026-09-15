@@ -32,7 +32,7 @@
  * The *hidden* half of the two reveal styles lives in global.css, gated on
  * `(prefers-reduced-motion: no-preference)` rather than a class this module
  * adds — so a reduced-motion reader always gets the finished static layout,
- * and GSAP/Lenis are never even requested for them (see schedule() below).
+ * and GSAP is never even requested for them (see schedule() below).
  * This module only ever animates elements *out* of a state CSS already put
  * them in; it never decides what "hidden" looks like.
  *
@@ -147,13 +147,12 @@ export async function initMotion() {
     return;
   }
 
-  const [{ default: Lenis }, { default: gsap }, { ScrollTrigger }] = await Promise.all([
-    import('lenis'),
+  const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
     import('gsap'),
     import('gsap/ScrollTrigger'),
   ]);
 
-  // The setting can flip while those three are in flight.
+  // The setting can flip while those two are in flight.
   if (reduce.matches) {
     starting = false;
     return;
@@ -161,54 +160,12 @@ export async function initMotion() {
 
   gsap.registerPlugin(ScrollTrigger);
 
-  // lerp 0.11 settles in roughly 150ms — weight, not float. syncTouch stays
-  // off so phones keep native momentum, which is both smoother and cheaper
-  // than simulating it.
-  const lenis = new Lenis({
-    lerp: 0.11,
-    wheelMultiplier: 1,
-    syncTouch: false,
-    autoRaf: false,
-  });
-
-  // Hand ScrollTrigger's scroll position through Lenis rather than reading
-  // native scrollTop directly, so a later phase's ScrollTrigger.scrollTo /
-  // pinning stays in lockstep with Lenis's eased position instead of
-  // fighting it.
-  ScrollTrigger.scrollerProxy(document.documentElement, {
-    scrollTop(value) {
-      if (typeof value === 'number') {
-        lenis.scrollTo(value, { immediate: true });
-        return;
-      }
-      return window.scrollY;
-    },
-    getBoundingClientRect() {
-      return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
-    },
-  });
-
-  lenis.on('scroll', ScrollTrigger.update);
-  const onRaf = (time: number) => lenis.raf(time * 1000);
-  gsap.ticker.add(onRaf);
-  gsap.ticker.lagSmoothing(0);
-
-  const onRefresh = () => lenis.resize();
-  ScrollTrigger.addEventListener('refresh', onRefresh);
-
-  // In-page links have to go through Lenis or they fight it. The skip link is
-  // deliberately excluded: it must jump instantly and move focus.
-  const onAnchor = (e: MouseEvent) => {
-    const link = (e.target as Element | null)?.closest?.('a[href^="#"]:not(.skip)');
-    if (!link) return;
-    const id = link.getAttribute('href');
-    if (!id || id === '#') return;
-    const target = document.querySelector(id);
-    if (!target) return;
-    e.preventDefault();
-    lenis.scrollTo(target as HTMLElement, { offset: -24 });
-  };
-  document.addEventListener('click', onAnchor);
+  // Lenis used to drive the scroll position here, with ScrollTrigger reading
+  // through a scrollerProxy. It is gone: CSS scroll snapping works off native
+  // scroll gestures, and a library that animates scrollTop from JS defeats it.
+  // ScrollTrigger reads the real scroll position directly now, and in-page
+  // links are plain anchor navigation again — global.css asks for smooth
+  // behaviour where motion is allowed.
 
   const ctx = gsap.context(() => {
     wireLineReveals(gsap);
@@ -228,11 +185,7 @@ export async function initMotion() {
 
   teardown = () => {
     root.classList.remove('motion', 'motion-pending');
-    document.removeEventListener('click', onAnchor);
-    ScrollTrigger.removeEventListener('refresh', onRefresh);
-    gsap.ticker.remove(onRaf);
     ctx.revert();
-    lenis.destroy();
     // A reveal or count may have been interrupted mid-tween; ctx.revert()
     // clears GSAP's inline styles, so the reveal CSS's hidden state in
     // global.css would otherwise be left showing. Counts need their real
