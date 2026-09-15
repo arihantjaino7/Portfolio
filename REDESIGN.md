@@ -125,7 +125,7 @@ element masks in, reduced-motion ships zero JS.
     (CSS animation armed before first paint, as today — so it plays even if the
     JS never lands).
   - `person.statement` under it, one line, delayed 120 ms.
-  - Bottom row: `Noida, India` · local time · `scroll ↓` cue that fades out on
+  - Bottom row: `Delhi, India` · local time · `scroll ↓` cue that fades out on
     first scroll.
 - Landing does **not** scroll-pin. It just scrolls away, with the canvas fading
   to the page ground over the first 100vh.
@@ -246,7 +246,7 @@ parallaxes.
 - Row of three: **GitHub** → `links.github`, **LinkedIn** → `links.linkedin`,
   **Email** → `links.email` (all already in `src/config/site.ts`; add nothing
   hard-coded). Each a mono label with an `↗` that nudges on hover.
-- Footer hairline: `© 2026 Arihant Jain` · `Noida, India — <live local time>` ·
+- Footer hairline: `© 2026 Arihant Jain` · `Delhi, India — <live local time>` ·
   `BACK TO TOP ↑` (Lenis `scrollTo(0)`).
 
 **Done when:** the three links resolve correctly, the mailto works, copy-to-clipboard
