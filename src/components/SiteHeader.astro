@@ -24,12 +24,12 @@ const items = [...nav, { href: links.email, label: 'email' }];
         items.map((item) => (
           <a
             href={item.href}
-            class="header-link"
+            class="nav-pill"
             aria-current={
               item.href.startsWith('mailto:') || !path.startsWith(item.href) ? undefined : 'page'
             }
           >
-            {item.label}
+            <span class="nav-pill-label">{item.label}</span>
           </a>
         ))
       }
@@ -37,11 +37,36 @@ const items = [...nav, { href: links.email, label: 'email' }];
   </div>
 </header>
 
+<!--
+  Upgrade only: the fill already expands from the pill's centre with no JS at
+  all (--px/--py fall back to 50%). This just moves the origin to wherever the
+  pointer actually crossed the edge, and on the way out to wherever it left, so
+  the circle grows and retreats from the cursor rather than the middle.
+  is:inline keeps it out of the bundle — every route but the homepage still
+  ships zero fetched JS.
+-->
+<script is:inline>
+  (function () {
+    var pills = document.querySelectorAll('.nav-pill');
+    for (var i = 0; i < pills.length; i++) {
+      (function (el) {
+        function origin(e) {
+          var r = el.getBoundingClientRect();
+          el.style.setProperty('--px', e.clientX - r.left + 'px');
+          el.style.setProperty('--py', e.clientY - r.top + 'px');
+        }
+        el.addEventListener('pointerenter', origin);
+        el.addEventListener('pointerleave', origin);
+      })(pills[i]);
+    }
+  })();
+</script>
+
 <style>
-  /* Every colour here reads a live token (--color-text / --color-muted /
-     --color-rule / --color-accent) rather than the --color-ink family:
-     Tailwind's @theme bakes those aliases to a static value, so they would not
-     follow a .dark-panel override if the header ever sits over one. */
+  /* Every colour here reads a live token (--color-text / --color-ground /
+     --color-rule) rather than the --color-ink family: Tailwind's @theme bakes
+     those aliases to a static value, so they would not follow a .dark-panel
+     override if the header ever sits over one. */
   .site-header {
     border-bottom: 1px solid var(--color-rule);
   }
@@ -51,69 +76,113 @@ const items = [...nav, { href: links.email, label: 'email' }];
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
-    padding-block: 1.15rem;
+    padding-block: 1rem;
   }
 
-  .brand,
-  .header-link {
+  .brand {
     font-family: var(--font-mono);
-    /* Up from --text-meta (13px): the header was legible but recessive. */
     font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1.2;
     color: var(--color-text);
   }
 
-  .brand {
-    font-weight: 600;
-    letter-spacing: -0.01em;
+  .brand-link:hover,
+  .brand-link:focus-visible {
+    color: var(--color-accent);
   }
 
   .header-nav {
     display: flex;
     align-items: center;
-    gap: clamp(1.25rem, 3vw, 2.25rem);
+    gap: 0.5rem;
   }
 
-  .header-link {
-    font-weight: 500;
-    /* Underline drawn as a background so it can thicken on hover without
-       shifting the text, matching global.css's `a.u`. */
-    background-image: linear-gradient(var(--color-rule), var(--color-rule));
-    background-repeat: no-repeat;
-    background-position: 0 100%;
-    background-size: 100% 1px;
-    padding-bottom: 0.2em;
-    transition:
-      background-size 160ms ease,
-      background-image 160ms ease,
-      color 160ms ease;
+  .nav-pill {
+    position: relative;
+    /* Clips the expanding circle to the pill's rounded shape. */
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1.05rem;
+    border: 2px solid var(--color-text);
+    border-radius: 0.6rem;
+    background: transparent;
+    line-height: 1;
   }
 
-  .brand-link:hover,
-  .brand-link:focus-visible,
-  .header-link:hover,
-  .header-link:focus-visible {
-    color: var(--color-accent);
+  /* The fill. A circle centred on the pointer's entry point, scaled up to
+     flood the pill. 260% of the pill's width, kept square by aspect-ratio, is
+     wide enough that the circle still covers the far corner when it starts
+     from the opposite one. */
+  .nav-pill::before {
+    content: '';
+    position: absolute;
+    left: var(--px, 50%);
+    top: var(--py, 50%);
+    width: 260%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 50%;
+    background: var(--color-text);
+    transform: scale(0);
+    /* Near-linear through the middle rather than a hard ease-out: the circle
+       is oversized, so a front-loaded curve has it covering the pill within
+       ~70ms and the sweep never reads. */
+    transition: transform 560ms cubic-bezier(0.62, 0.04, 0.3, 1);
   }
 
-  .header-link:hover,
-  .header-link:focus-visible,
-  .header-link[aria-current='page'] {
-    background-image: linear-gradient(var(--color-accent), var(--color-accent));
-    background-size: 100% 2px;
+  .nav-pill-label {
+    position: relative; /* above the fill */
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    /* Held back a beat so the letters flip once the fill has arrived under
+       them, rather than greying out while it is still travelling. */
+    transition: color 180ms ease 200ms;
   }
 
-  .header-link[aria-current='page'] {
-    color: var(--color-accent);
+  .nav-pill:hover::before,
+  .nav-pill:focus-visible::before,
+  .nav-pill[aria-current='page']::before {
+    transform: scale(1);
   }
 
-  @media (max-width: 26rem) {
-    .header-nav {
-      gap: 1rem;
+  .nav-pill:hover .nav-pill-label,
+  .nav-pill:focus-visible .nav-pill-label,
+  .nav-pill[aria-current='page'] .nav-pill-label {
+    color: var(--color-ground);
+  }
+
+  /* The current page is already filled, so it has no travel to do. */
+  .nav-pill[aria-current='page']::before {
+    transition: none;
+  }
+
+  .nav-pill[aria-current='page'] .nav-pill-label {
+    transition: none;
+  }
+
+  @media (max-width: 34rem) {
+    .header-inner {
+      gap: 0.75rem;
     }
-    .brand,
-    .header-link {
-      font-size: 0.875rem;
+    .header-nav {
+      gap: 0.35rem;
+    }
+    .nav-pill {
+      padding: 0.45rem 0.6rem;
+      border-width: 1.5px;
+    }
+    .nav-pill-label {
+      font-size: 0.6875rem;
+    }
+    .brand {
+      font-size: 0.8125rem;
     }
   }
 </style>
