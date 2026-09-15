@@ -135,10 +135,14 @@ const items = [...nav, { href: links.email, label: 'email' }];
 
   .nav-pill-label {
     position: relative; /* above the fill */
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
+    /* Condensed grotesque, sized up from the sans it replaced: Oswald's
+       narrow letterfit reads smaller at the same px, and its caps are tall
+       enough that 0.875rem sits on the same visual line as Manrope's
+       0.8125rem. */
+    font-family: var(--font-condensed);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.055em;
     text-transform: uppercase;
     color: var(--color-text);
     /* Held back a beat so the letters flip once the fill has arrived under
@@ -179,7 +183,8 @@ const items = [...nav, { href: links.email, label: 'email' }];
       border-width: 1.5px;
     }
     .nav-pill-label {
-      font-size: 0.6875rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
     }
     .brand {
       font-size: 0.8125rem;
