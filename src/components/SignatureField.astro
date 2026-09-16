@@ -1,0 +1,61 @@
+---
+/**
+ * The field behind a case study's header — the visible half of a project's
+ * signature (the other half is its accent, which is one token).
+ *
+ * One element, one background, no script. Each motif is a branch below, and
+ * every one of them has to obey the same two rules: it bleeds the full width
+ * of the viewport rather than the shell, and it fades out before the copy
+ * begins, so the header always reads against plain ground.
+ *
+ * Adding a motif means adding a branch here and a value to the `motif` enum
+ * in content.config.ts. There is deliberately no default branch: an
+ * unimplemented motif fails the build at the schema instead of rendering an
+ * empty div nobody notices.
+ */
+interface Props {
+  motif: 'ledger';
+}
+const { motif } = Astro.props;
+---
+
+<div class="sig" data-motif={motif} aria-hidden="true"></div>
+
+<style>
+  .sig {
+    position: absolute;
+    /* Full-bleed: the header sits in .shell, which is capped and centred, but
+       a field that stops at the text column reads as a box rather than as the
+       surface the page is printed on. body carries overflow-x: hidden, so the
+       overhang cannot produce a scrollbar. */
+    inset-inline: calc(-50vw + 50%);
+    top: calc(var(--sig-bleed) * -1);
+    bottom: 0;
+    z-index: -1;
+    pointer-events: none;
+    --sig-bleed: clamp(3.5rem, 10vh, 6rem);
+  }
+
+  /* ARC — ruled lines and column rules, the surface a ledger is kept on.
+     Drawn in the page's own accent at low strength rather than in grey: the
+     field and the accent are one signature, and a neutral grid would read as
+     chrome that happens to be there. */
+  .sig[data-motif='ledger'] {
+    background-image:
+      repeating-linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--color-accent) 34%, transparent) 0 1px,
+        transparent 1px 2.25rem
+      ),
+      repeating-linear-gradient(
+        to right,
+        color-mix(in srgb, var(--color-accent) 22%, transparent) 0 1px,
+        transparent 1px 9rem
+      );
+    /* Anchored to the top-left of the bleed rather than the element box, so
+       the rules land on the same pitch at every viewport width. */
+    background-position: 0 0;
+    -webkit-mask-image: linear-gradient(180deg, #000 0, #000 38%, transparent 92%);
+    mask-image: linear-gradient(180deg, #000 0, #000 38%, transparent 92%);
+  }
+</style>
