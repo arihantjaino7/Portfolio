@@ -240,16 +240,16 @@ function sheetsFor(pages: NotebookLeaf[]) {
      physical book reads as physical because you can see the surface it is
      lying on and the shadow it drops onto it, which a black void cannot give. */
   .nb {
-    --turn: 700ms;
+    --turn: 560ms;
     /* Warm, not neutral: paper shadows carry the colour of the paper. A grey
        shadow under cream stock is the single thing that reads as "rendered". */
     --paper-shade: 58, 48, 34;
-    /* --color-ground nudged a few points down and warmer. The separation
-       between the sheet and the surface under it is now carried by value —
-       this stock against a deeper backdrop — which is why the shadows below
-       can be as light as they are. Shadow is the expensive way to say
-       "this object is in front"; contrast is the free one. */
-    --paper: #efece4;
+    /* Paper and surface are the same colour within about ten points of
+       luminance, the paper the lighter of the two. At that distance neither
+       value nor shadow separates the book on its own — what reads is the pair
+       of them plus the edge: a soft wide shadow, a rounded corner catching the
+       light, and the gutter. That is also how the reference does it. */
+    --paper: #f6f4ef;
     width: min(84rem, 100vw - 2rem);
     max-width: none;
     height: min(46rem, 100svh - 2rem);
@@ -265,10 +265,8 @@ function sheetsFor(pages: NotebookLeaf[]) {
     overflow: visible;
   }
 
-  /* Deeper than the paper by about 30 points of luminance. That gap is what
-     lifts the book off the surface; the shadows only soften the edge. */
   .nb::backdrop {
-    background: rgba(211, 206, 195, 0.95);
+    background: rgba(237, 234, 226, 0.96);
     backdrop-filter: blur(7px) saturate(1.05);
   }
 
@@ -331,6 +329,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
   .nb-viewport {
     position: relative;
     height: 100%;
+    cursor: pointer;
     /* Desktop: visible, so a sheet's shadow is not clipped mid-turn. The
        narrow-screen rule flips this to hidden, which is what turns the
        viewport into a window onto one page of the spread. */
@@ -363,12 +362,12 @@ function sheetsFor(pages: NotebookLeaf[]) {
     z-index: -1;
     pointer-events: none;
     background: radial-gradient(
-      55% 100% at 50% 0%,
-      rgba(var(--paper-shade), 0.12),
-      rgba(var(--paper-shade), 0.04) 55%,
-      transparent 78%
+      58% 100% at 50% 0%,
+      rgba(var(--paper-shade), 0.15),
+      rgba(var(--paper-shade), 0.05) 55%,
+      transparent 80%
     );
-    filter: blur(6px);
+    filter: blur(9px);
   }
 
   /* ── paper ───────────────────────────────────────────────────── */
@@ -381,9 +380,12 @@ function sheetsFor(pages: NotebookLeaf[]) {
       /* grain — an feTurbulence tile at 3%, which is what stops a flat fill
          reading as a screen. No file: it is a few hundred bytes inline. */
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
+      /* the outer edge: the cut side of the block, where the sheets below show
+         as a thin darker line under the top one */
+      linear-gradient(to left, rgba(var(--paper-shade), 0.055), transparent 3rem),
       /* the sheet lifting very slightly away from the spine */
       radial-gradient(130% 100% at 100% 50%, rgba(255, 255, 255, 0.3), transparent 62%);
-    background-size: 120px 120px, auto;
+    background-size: 120px 120px, auto, auto;
   }
 
   .nb-board {
@@ -395,11 +397,11 @@ function sheetsFor(pages: NotebookLeaf[]) {
   /* Outer corners round, spine corners square — paper is only cut on the
      outside edge. Left board rounds left, right board rounds right. */
   .nb-board-left {
-    border-radius: 0.55rem 0 0 0.55rem;
+    border-radius: 0.95rem 0 0 0.95rem;
   }
 
   .nb-board-right {
-    border-radius: 0 0.55rem 0.55rem 0;
+    border-radius: 0 0.95rem 0.95rem 0;
   }
 
   .nb-board-mark {
@@ -495,10 +497,10 @@ function sheetsFor(pages: NotebookLeaf[]) {
     /* Both faces round their local right edge. The back is mirrored by its own
        rotation, so that edge lands on screen-left — the outer edge of the
        left-hand page. One rule, correct on both sides. */
-    border-radius: 0 0.55rem 0.55rem 0;
+    border-radius: 0 0.95rem 0.95rem 0;
     box-shadow:
-      0 1px 1px rgba(var(--paper-shade), 0.05),
-      0 5px 14px rgba(var(--paper-shade), 0.06);
+      0 1px 2px rgba(var(--paper-shade), 0.06),
+      0 10px 28px rgba(var(--paper-shade), 0.07);
   }
 
   .nb-back {
@@ -531,7 +533,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     top: 0;
     bottom: 0;
     left: 50%;
-    width: clamp(2.25rem, 6vw, 5rem);
+    width: clamp(3.5rem, 9vw, 7.5rem);
     transform: translateX(-50%);
     z-index: 15;
     pointer-events: none;
@@ -539,10 +541,11 @@ function sheetsFor(pages: NotebookLeaf[]) {
       linear-gradient(
         to right,
         transparent,
-        rgba(var(--paper-shade), 0.02) 32%,
-        rgba(var(--paper-shade), 0.07) 47%,
-        rgba(var(--paper-shade), 0.07) 53%,
-        rgba(var(--paper-shade), 0.02) 68%,
+        rgba(var(--paper-shade), 0.018) 26%,
+        rgba(var(--paper-shade), 0.055) 44%,
+        rgba(var(--paper-shade), 0.075) 50%,
+        rgba(var(--paper-shade), 0.055) 56%,
+        rgba(var(--paper-shade), 0.018) 74%,
         transparent
       );
   }
@@ -612,14 +615,21 @@ function sheetsFor(pages: NotebookLeaf[]) {
     z-index: 1;
     height: 100%;
     overflow-y: auto;
+    /* Stops a page scrolled to its end from handing the rest of the gesture
+       to the document underneath the notebook. */
     overscroll-behavior: contain;
+    cursor: auto;
     padding: clamp(1.25rem, 2.6vw, 2.5rem);
     padding-left: clamp(2.75rem, 4.5vw, 4rem);
   }
 
   /* ── click zones ─────────────────────────────────────────────── */
-  /* Transparent halves over the spread. A <button> rather than a div so the
-     turn is reachable by keyboard and announced, and so it needs no role. */
+  /* The turn targets exist for the keyboard and for assistive tech — real
+     buttons, focusable and labelled. They take no pointer at all: lying over
+     the pages, they swallowed the wheel, so a scroll over a page scrolled
+     nothing and chained to the document behind it instead. The mouse is
+     served by a click handler on the viewport, which reads which half was
+     clicked, so the wheel reaches the paper. */
   .nb-zone {
     position: absolute;
     top: 0;
@@ -629,22 +639,17 @@ function sheetsFor(pages: NotebookLeaf[]) {
     border: 0;
     background: transparent;
     padding: 0;
+    pointer-events: none;
     -webkit-appearance: none;
     appearance: none;
   }
 
   .nb-zone-back {
     left: 0;
-    cursor: w-resize;
   }
 
   .nb-zone-fwd {
     right: 0;
-    cursor: e-resize;
-  }
-
-  .nb-zone:disabled {
-    cursor: default;
   }
 
   .nb-zone:focus-visible {
@@ -872,7 +877,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     if (!books.length || typeof HTMLDialogElement === 'undefined') return;
 
     /** Matches --turn in the stylesheet; the shading and gloss share it. */
-    const TURN_MS = 700;
+    const TURN_MS = 560;
     const narrow = window.matchMedia('(max-width: 46rem)');
 
     books.forEach((dlg) => {
@@ -955,27 +960,22 @@ function sheetsFor(pages: NotebookLeaf[]) {
         go(Math.min(total - 1, t * 2));
       }
 
-      // The zones cover the pages, so a click on a link inside a page would
-      // never reach it. Look at what is actually underneath the pointer first
-      // and hand the click over before treating it as a page turn.
-      function throughTo(e) {
-        const zone = e.currentTarget;
-        zone.style.pointerEvents = 'none';
-        const under = document.elementFromPoint(e.clientX, e.clientY);
-        zone.style.pointerEvents = '';
-        const interactive = under && under.closest('a, button');
-        if (interactive && !interactive.classList.contains('nb-zone')) {
-          interactive.click();
-          return true;
-        }
-        return false;
-      }
+      // Keyboard and AT activate the zones directly.
+      zoneBack.addEventListener('click', () => back());
+      zoneFwd.addEventListener('click', () => forward());
 
-      zoneBack.addEventListener('click', (e) => {
-        if (!throughTo(e)) back();
-      });
-      zoneFwd.addEventListener('click', (e) => {
-        if (!throughTo(e)) forward();
+      // The mouse is handled here instead, on the viewport, so that nothing
+      // has to lie over the pages and intercept the wheel. Which half decides
+      // the direction; anything the reader could have meant to click — a link
+      // in a page, or a zone reached by keyboard — is left alone.
+      viewport.addEventListener('click', (e) => {
+        if (e.target.closest('a, button')) return;
+        const r = viewport.getBoundingClientRect();
+        if (e.clientX < r.left + r.width / 2) {
+          if (!zoneBack.disabled) back();
+        } else if (!zoneFwd.disabled) {
+          forward();
+        }
       });
 
       dots.forEach((d) => d.addEventListener('click', () => go(Number(d.dataset.nbGo))));
