@@ -546,7 +546,11 @@ const skillItems = skills.flatMap((g) => g.items);
      on the centred grid the rest of the page uses. */
   .work-section {
     --work-pad: clamp(0.75rem, 1.4vw, 1.5rem);
-    min-height: calc(100svh - var(--header-h));
+    /* A full viewport, not 100svh minus the header: the header hides as soon as
+       you scroll down, so subtracting its height here only guaranteed a strip of
+       the next section showing at the bottom. Nothing is lost underneath the
+       header when it is shown — the top padding already clears it. */
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
