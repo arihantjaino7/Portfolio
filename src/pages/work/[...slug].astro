@@ -55,21 +55,24 @@ const sig = d.signature;
   description={d.summary}
   ogImage={assets.project(entry.id).og}
   ogType="article"
+  theme="dark"
 >
   <article
     class="shell page"
     style={sig?.accent ? `--color-accent:${sig.accent}` : undefined}
   >
-    <header class="head">
+    <header class="head grid-rail">
       {sig?.motif && <SignatureField motif={sig.motif} />}
-      <p class="meta breadcrumb"><a class="u" href={withBase('/work')}>work</a> / {entry.id}</p>
-      <h1 class="title">{d.title}</h1>
-      <p class="summary measure">{d.summary}</p>
-      <dl class="credits meta">
-        <div><dt>role</dt><dd>{d.role.toLowerCase()}</dd></div>
-        {d.team && <div><dt>team</dt><dd>{d.team.toLowerCase()}</dd></div>}
-        <div><dt>year</dt><dd>{d.year}</dd></div>
-      </dl>
+      <p class="meta breadcrumb rail"><a class="u" href={withBase('/work')}>work</a> / {entry.id}</p>
+      <div class="rail-body">
+        <h1 class="title page-title">{d.title}</h1>
+        <p class="summary measure">{d.summary}</p>
+        <dl class="credits meta">
+          <div><dt>role</dt><dd>{d.role.toLowerCase()}</dd></div>
+          {d.team && <div><dt>team</dt><dd>{d.team.toLowerCase()}</dd></div>}
+          <div><dt>year</dt><dd>{d.year}</dd></div>
+        </dl>
+      </div>
     </header>
 
     <div class="grid-rail spine">
@@ -206,7 +209,10 @@ const sig = d.signature;
   }
 
   .breadcrumb { margin: 0 0 1.5rem; }
-  .title { font-size: var(--text-chapter); margin-bottom: 1rem; }
+
+  /* Type comes from .page-title in global.css; only the spacing is local. */
+  .title { margin-bottom: 1.25rem; }
+
   .summary { font-size: clamp(1.0625rem, 2vw, 1.3125rem); line-height: 1.45; margin: 0; }
 
   .credits {
@@ -236,16 +242,36 @@ const sig = d.signature;
     display: flex;
     align-items: baseline;
     gap: 1rem;
-    font-size: 1.375rem;
-    font-weight: 600;
+    font-family: var(--font-compress);
+    font-size: 1.75rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
     margin-bottom: 1.5rem;
   }
   .step-num {
     font-family: var(--font-mono);
     font-weight: 400;
     font-size: 0.8125rem;
-    color: var(--color-muted);
+    letter-spacing: 0;
+    color: var(--color-accent);
     min-width: 1.75rem;
+  }
+
+  /* Above the breakpoint the numeral hangs in the gap to the left of the
+     column instead of indenting the words, so every step title starts on the
+     same edge as the page title above it. */
+  @media (min-width: 900px) {
+    .step-title {
+      margin-left: -2.75rem;
+      /* The numeral's own min-width is the whole gutter now, so the flex gap
+         would add 1rem on top of it and push every step title a gap to the
+         right of the page title. */
+      gap: 0;
+    }
+    .step-num {
+      min-width: 2.75rem;
+    }
   }
 
   .lede { font-size: 1.0625rem; margin: 0; }

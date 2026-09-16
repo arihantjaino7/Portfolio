@@ -15,6 +15,13 @@ interface Props {
   noindex?: boolean;
   /** The homepage's own #outro section replaces the generic contact footer. */
   hideFooter?: boolean;
+  /**
+   * Which palette the whole route is painted in. 'dark' puts data-theme on
+   * <html>, where global.css redeclares the same five tokens .dark-panel
+   * does — so body, main, the footer and every component inside them follow
+   * from one prop rather than from per-page colour.
+   */
+  theme?: 'light' | 'dark';
 }
 
 const {
@@ -24,7 +31,10 @@ const {
   ogType = 'website',
   noindex = false,
   hideFooter = false,
+  theme = 'light',
 } = Astro.props;
+
+const isDark = theme === 'dark';
 
 const pageTitle = title ? meta.titleTemplate(title) : meta.defaultTitle;
 const canonical = new URL(Astro.url.pathname.replace(/\/$/, '') || '/', Astro.site);
@@ -44,7 +54,7 @@ const personJsonLd = {
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={isDark ? 'dark' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -55,8 +65,8 @@ const personJsonLd = {
 
     <link rel="icon" href={assets.favicon} type="image/svg+xml" />
     <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
-    <meta name="theme-color" content="#f2f1ed" />
-    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content={isDark ? '#0b0c0e' : '#f2f1ed'} />
+    <meta name="color-scheme" content={theme} />
     <meta name="author" content={person.name} />
 
     <link rel="preload" as="font" type="font/woff2" crossorigin
