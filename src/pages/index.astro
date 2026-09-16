@@ -394,9 +394,12 @@ const skillItems = skills.flatMap((g) => g.items);
     }
   }
 
+  /* --title-nudge: the headings sit a hair inside the rows' left edge rather
+     than flush with it. Shared with .work-title so the two can't drift. */
   .achievements-intro {
+    --title-nudge: clamp(0.5rem, 0.9vw, 1rem);
     padding-block: clamp(4rem, 13vh, 8rem) clamp(2rem, 7vh, 4rem);
-    padding-inline: var(--ach-pad);
+    padding-inline: calc(var(--ach-pad) + var(--title-nudge)) var(--ach-pad);
   }
 
   /* Matched to .work-title exactly — same face, same clamp, same fit — so the
@@ -565,6 +568,7 @@ const skillItems = skills.flatMap((g) => g.items);
   }
 
   .work-head :global(.work-title) {
+    padding-left: clamp(0.5rem, 0.9vw, 1rem);
     font-family: var(--font-compress);
     font-size: clamp(2.25rem, 6.5vw, 5rem);
     font-weight: 400;
