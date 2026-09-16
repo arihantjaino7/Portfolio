@@ -3,10 +3,11 @@
  * Proof artifact — spine step IV, and the reason this folio beats a designer's.
  * A first-class component, not an afterthought.
  *
- * Three kinds, one contract:
+ * Four kinds, one contract:
  *   tests — real runner output, monospace, unedited
  *   diff  — a real patch the tool generated, +/- coloured
  *   video — a recorded run, poster-first, preload="none", zero JS
+ *   output— what the thing produced on a real run, monospace, unedited
  *
  * The body is read from src/proof/<file> at build time. Drop the file in and it
  * renders; leave it out and you get a labelled frame naming the exact path.
@@ -14,7 +15,7 @@
 import { assets, ratio } from '../config/assets';
 
 interface Props {
-  kind: 'tests' | 'diff' | 'video';
+  kind: 'tests' | 'diff' | 'video' | 'output';
   summary: string;
   caption?: string;
   /** Path under src/proof/, e.g. "arc/tests.txt" */
@@ -52,7 +53,7 @@ const missingLabel =
 <figure class="proof">
   <p class="summary">
     <span class="figure">{summary}</span>
-    <span class="meta kind">{kind === 'tests' ? 'test run' : kind === 'diff' ? 'generated patch' : 'recorded run'}</span>
+    <span class="meta kind">{kind === 'tests' ? 'test run' : kind === 'diff' ? 'generated patch' : kind === 'output' ? 'generated output' : 'recorded run'}</span>
   </p>
 
   {
@@ -113,6 +114,17 @@ const missingLabel =
     font-size: 0.78rem;
     line-height: 1.7;
     tab-size: 2;
+  }
+
+  /* Test output and patches are column-formatted — horizontal scroll preserves
+     their alignment. Generated prose has no alignment to preserve and its lines
+     run to paragraph length, so wrap it rather than hiding most of it offscreen. */
+  .well[data-kind='output'] {
+    overflow-x: visible;
+  }
+  .well[data-kind='output'] pre {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
   }
   code { font: inherit; }
 

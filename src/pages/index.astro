@@ -108,8 +108,9 @@ const skillItems = skills.flatMap((g) => g.items);
       <div class="work-head">
         <Reveal as="h2" class="work-title" lines={['Projects']} />
         <p class="work-lede-copy">
-          One keeps competition rules honest inside the database. The other
-          grades a target's security without sending it a single packet.
+          One keeps competition rules honest inside the database. One grades a
+          target's security without sending it a single packet. One won't write
+          a line it can't trace back to a source.
         </p>
       </div>
 
@@ -708,7 +709,10 @@ const skillItems = skills.flatMap((g) => g.items);
     transition: transform 600ms cubic-bezier(0.62, 0.04, 0.3, 1);
     /* Staggered off the character's index, so the roll chases the slab across
        the row rather than flipping the whole word at once. */
-    transition-delay: calc(var(--c) * 26ms);
+    /* Capped: a 29-character title would otherwise put the last glyph 700ms
+       behind the first and take 1.3s to settle. The cap keeps every title,
+       short or long, finished inside ~0.9s while preserving the stagger. */
+    transition-delay: min(calc(var(--c) * 26ms), 320ms);
   }
 
   .ch-b {

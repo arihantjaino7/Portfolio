@@ -69,7 +69,7 @@ const work = defineCollection({
     /** Spine step IV — the artifact. Missing file/video renders a drop-in frame. */
     proof: z
       .object({
-        kind: z.enum(['tests', 'diff', 'video']),
+        kind: z.enum(['tests', 'diff', 'video', 'output']),
         /** Headline claim, always shown. */
         summary: z.string(),
         caption: z.string().optional(),
