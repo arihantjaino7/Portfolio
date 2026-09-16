@@ -2,9 +2,16 @@
 /**
  * Project notebook — the home page's reading layer.
  *
- * Clicking a work row opens the project as a stack of paper leaves you turn
- * one at a time, rather than navigating to the long-form case study. One leaf
- * per spine section, in the order the case study uses them.
+ * Clicking a work row opens the project as an open book: two pages at a time,
+ * click the left page to go back, the right page to go forward. One page per
+ * spine section, in the order the case study uses them.
+ *
+ * The sheet model is what makes it a book rather than a slideshow. A sheet is
+ * one piece of paper carrying two pages: page 2k on its front, 2k+1 on its
+ * back. At turn state t, t sheets have been turned to the left, so the spread
+ * shows the back of sheet t-1 on the left and the front of sheet t on the
+ * right. Turning a sheet therefore reveals two new pages at once and moves the
+ * one you just read to the left-hand side, exactly as paper does.
  *
  * Progressive enhancement, top to bottom:
  *   - The row stays a real <a href="/work/<slug>">. With JS off, a <dialog>
@@ -12,17 +19,21 @@
  *     reader gets the full page. Nothing here is the only route to anything.
  *   - <dialog>.showModal() supplies the focus trap, the Esc handler, the inert
  *     background and ::backdrop for free — none of that is hand-rolled.
- *   - The turn is a rotateY around the leaf's left edge with shading swept
+ *   - The turn is a rotateY about the sheet's spine edge with shading swept
  *     across it mid-turn. It is not a deforming curl (that needs geometry this
  *     page has no business shipping); it is a hinge that reads as paper.
  *   - Under prefers-reduced-motion the global rule in global.css collapses
- *     every transition here, so leaves swap instantly and nothing is lost.
+ *     every transition here, so spreads swap instantly and nothing is lost.
+ *   - Below 46rem two pages side by side would be unreadable, so the book
+ *     keeps its spread and the viewport pans to whichever page you are on.
+ *     Same markup, same sheets, same turns — only the window narrows.
  *
- * Every leaf is rendered server-side, so the whole notebook is in the HTML and
+ * Every page is rendered server-side, so the whole notebook is in the HTML and
  * the JS only ever toggles classes.
  */
 import type { CollectionEntry } from 'astro:content';
-import ArchDiagram from './ArchDiagram.astro';
+import NotebookPage from './NotebookPage.astro';
+import type { NotebookLeaf } from './NotebookPage.astro';
 import { withBase } from '../config/paths';
 
 interface Props {
@@ -33,25 +44,36 @@ const { projects } = Astro.props;
 const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 
 /**
- * Which leaves a project gets. diagram, decision and proof are all optional in
+ * Which pages a project gets. diagram, decision and proof are all optional in
  * the schema, so this is computed per project rather than assumed — a case
- * study with only a problem opens as a one-leaf notebook instead of breaking.
+ * study with only a problem opens as a two-page book instead of breaking.
  */
-function leavesFor(entry: CollectionEntry<'work'>) {
+function pagesFor(entry: CollectionEntry<'work'>): NotebookLeaf[] {
   const d = entry.data;
-  return [
-    { kind: 'problem', label: 'Problem' } as const,
-    ...(d.diagram ? [{ kind: 'arch', label: 'Architecture' } as const] : []),
-    ...(d.decision ? [{ kind: 'decision', label: 'Decision' } as const] : []),
-    ...(d.proof ? [{ kind: 'proof', label: 'Proof' } as const] : []),
-    { kind: 'stack', label: 'Stack' } as const,
+  const spine: Array<Omit<NotebookLeaf, 'numeral'>> = [
+    { kind: 'problem', label: 'Problem' },
+    ...(d.diagram ? [{ kind: 'arch' as const, label: 'Architecture' }] : []),
+    ...(d.decision ? [{ kind: 'decision' as const, label: 'Decision' }] : []),
+    ...(d.proof ? [{ kind: 'proof' as const, label: 'Proof' }] : []),
+    { kind: 'stack', label: 'Stack' },
   ];
+  return spine.map((s, i) => ({ ...s, numeral: NUMERALS[i] }));
+}
+
+/** Pages paired onto sheets: front 2k, back 2k+1. The last back may be blank. */
+function sheetsFor(pages: NotebookLeaf[]) {
+  const sheets: Array<{ front: NotebookLeaf | null; back: NotebookLeaf | null }> = [];
+  for (let k = 0; k * 2 < pages.length; k++) {
+    sheets.push({ front: pages[2 * k] ?? null, back: pages[2 * k + 1] ?? null });
+  }
+  return sheets;
 }
 ---
 
 {
   projects.map((p) => {
-    const leaves = leavesFor(p);
+    const pages = pagesFor(p);
+    const sheets = sheetsFor(pages);
     const hasLinks = Boolean(p.data.links.repo || p.data.links.live);
     return (
       <dialog class="nb" id={`nb-${p.id}`} aria-label={`${p.data.title}, project notebook`}>
@@ -73,95 +95,69 @@ function leavesFor(entry: CollectionEntry<'work'>) {
             </div>
           </header>
 
-          <div class="nb-book" style={`--n:${leaves.length}`} data-nb-book>
-            {leaves.map((leaf, i) => (
-              <article class="nb-leaf" style={`--i:${i}`} data-nb-leaf={i}>
-                <div class="nb-face nb-front">
-                  <span class="nb-shade" aria-hidden="true" />
-                  <span class="nb-corner" aria-hidden="true" />
-                  <div class="nb-sheet">
-                    <p class="nb-numeral meta">
-                      <span class="nb-roman">{NUMERALS[i]}</span>
-                      {leaf.label}
-                    </p>
-
-                    {leaf.kind === 'problem' && <p class="nb-lede">{p.data.problem}</p>}
-
-                    {leaf.kind === 'arch' && p.data.diagram && (
-                      <div class="nb-diagram">
-                        <ArchDiagram
-                          caption={p.data.diagram.caption}
-                          svg={p.data.diagram.svg}
-                          layers={p.data.diagram.layers}
-                          title={p.data.title}
-                        />
+          <div class="nb-viewport" data-nb-viewport>
+            <div
+              class="nb-book"
+              style={`--sheets:${sheets.length}`}
+              data-nb-book
+              data-pages={pages.length}
+            >
+              {/*
+                The boards are the inside covers: what shows through where no
+                sheet is currently lying. Left is bare until the first turn,
+                right goes bare on the last spread of an even-paged book.
+              */}
+              <div class="nb-board nb-board-left" aria-hidden="true">
+                <span class="nb-board-mark meta">{p.data.title}</span>
+              </div>
+              <div class="nb-stack-col">
+                <div class="nb-board nb-board-right" aria-hidden="true" />
+                {sheets.map((sh, k) => (
+                  <article class="nb-sheet" style={`--k:${k}`} data-nb-sheet={k}>
+                    <div class="nb-face nb-front">
+                      <span class="nb-shade" aria-hidden="true" />
+                      <div class="nb-sheet-scroll">
+                        <NotebookPage entry={p} page={sh.front} />
                       </div>
-                    )}
-
-                    {leaf.kind === 'decision' && p.data.decision && (
-                      <div class="nb-decision">
-                        <h3 class="nb-q">{p.data.decision.question}</h3>
-                        <div class="nb-cols">
-                          <div>
-                            <p class="meta nb-key">chose</p>
-                            <p class="nb-chose">{p.data.decision.chose}</p>
-                          </div>
-                          <div>
-                            <p class="meta nb-key">rejected</p>
-                            <ul class="nb-rejected">
-                              {p.data.decision.rejected.map((r) => (
-                                <li>{r}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                        <p class="nb-why">{p.data.decision.why}</p>
+                    </div>
+                    <div class="nb-face nb-back">
+                      <span class="nb-shade" aria-hidden="true" />
+                      <div class="nb-sheet-scroll">
+                        <NotebookPage entry={p} page={sh.back} />
                       </div>
-                    )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
 
-                    {leaf.kind === 'proof' && p.data.proof && (
-                      <div class="nb-proof">
-                        <p class="nb-figure">{p.data.proof.summary}</p>
-                        {p.data.proof.caption && <p class="nb-why">{p.data.proof.caption}</p>}
-                        <a class="meta u" href={withBase(`/work/${p.id}`)}>
-                          Read the artifact in full →
-                        </a>
-                      </div>
-                    )}
+            {/*
+              Click targets, not decoration: a transparent half over the
+              viewport. They belong to the viewport rather than the book because
+              on a narrow screen the book is twice the viewport's width and
+              panned — halves of the book would mean "the left page" and "the
+              right page", and on a left-hand page every tap would go backwards.
+              Halves of the window always mean back and forward.
 
-                    {leaf.kind === 'stack' && (
-                      <ul class="nb-stack">
-                        {p.data.stack.map((s) => (
-                          <li class="meta">{s}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-                <div class="nb-face nb-back" aria-hidden="true">
-                  <span class="nb-back-mark meta">{p.data.title}</span>
-                </div>
-              </article>
-            ))}
+              They sit above the sheets, so the script hands a click through
+              when what is underneath is a link or a button.
+            */}
+            <button type="button" class="nb-zone nb-zone-back" data-nb-prev aria-label="Previous pages" />
+            <button type="button" class="nb-zone nb-zone-fwd" data-nb-next aria-label="Next pages" />
           </div>
 
           <nav class="nb-nav" aria-label="Notebook pages">
-            <button type="button" class="nb-arrow" data-nb-prev aria-label="Previous page">
-              ←
-            </button>
             <ol class="nb-index">
-              {leaves.map((leaf, i) => (
+              {pages.map((page, i) => (
                 <li>
                   <button type="button" class="nb-dot" data-nb-go={i}>
-                    <span class="nb-dot-n meta">{NUMERALS[i]}</span>
-                    <span class="nb-dot-label meta">{leaf.label}</span>
+                    <span class="nb-dot-n meta">{page.numeral}</span>
+                    <span class="nb-dot-label meta">{page.label}</span>
                   </button>
                 </li>
               ))}
             </ol>
-            <button type="button" class="nb-arrow" data-nb-next aria-label="Next page">
-              →
-            </button>
+            <p class="nb-hint meta" aria-hidden="true">click a page to turn it</p>
           </nav>
 
           {/*
@@ -230,7 +226,7 @@ function leavesFor(entry: CollectionEntry<'work'>) {
 <style>
   /* ── shell ───────────────────────────────────────────────────── */
   .nb {
-    width: min(78rem, 100vw - 2rem);
+    width: min(82rem, 100vw - 2rem);
     max-width: none;
     height: min(46rem, 100svh - 2rem);
     max-height: none;
@@ -308,33 +304,69 @@ function leavesFor(entry: CollectionEntry<'work'>) {
   }
 
   /* ── the book ────────────────────────────────────────────────── */
+  .nb-viewport {
+    position: relative;
+    height: 100%;
+    /* Desktop: visible, so a sheet's drop shadow is not clipped mid-turn.
+       The narrow-screen rule flips this to hidden, which is what turns the
+       viewport into a window onto one page of the spread. */
+    overflow: visible;
+  }
+
   /* perspective without preserve-3d: the book stays a flat stacking context so
-     z-index still orders the leaves, while each leaf gets its own 3D space for
+     z-index still orders the sheets, while each sheet gets its own 3D space for
      its two faces. preserve-3d here would hand sorting to the geometry and the
      stack would shuffle itself mid-turn. */
   .nb-book {
     position: relative;
     height: 100%;
-    perspective: 2400px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    perspective: 2800px;
   }
 
-  .nb-leaf {
+  .nb-board {
+    background: var(--color-ground-deep);
+    border-radius: 0.3rem;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 60px rgba(20, 21, 26, 0.12);
+  }
+
+  .nb-board-mark {
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  .nb-stack-col {
+    position: relative;
+    grid-column: 2;
+  }
+
+  .nb-board-right {
+    position: absolute;
+    inset: 0;
+  }
+
+  .nb-sheet {
     position: absolute;
     inset: 0;
     transform-style: preserve-3d;
+    /* The spine. Every sheet hinges on the middle of the book. */
     transform-origin: left center;
-    transition: transform 780ms cubic-bezier(0.22, 0.61, 0.24, 1);
-    z-index: calc(var(--n) - var(--i));
+    transition: transform 820ms cubic-bezier(0.22, 0.61, 0.24, 1);
+    z-index: calc(var(--sheets) - var(--k));
   }
 
   /* 178deg rather than 180: a face exactly edge-on to the viewer flickers
      between itself and its backface on some GPUs. Two degrees of rake is
      invisible and stops it. */
-  .nb-leaf.is-turned {
+  .nb-sheet.is-turned {
     transform: rotateY(-178deg);
-    /* Turned leaves pile up on the left in the order they were turned, so the
-       page you just turned sits on top of the one before it. */
-    z-index: calc(var(--n) + var(--i) + 1);
+    /* Turned sheets pile on the left in the order they were turned, so the one
+       you just read sits on top of the one before it. */
+    z-index: calc(var(--sheets) + var(--k) + 1);
   }
 
   .nb-face {
@@ -349,50 +381,45 @@ function leavesFor(entry: CollectionEntry<'work'>) {
 
   .nb-back {
     transform: rotateY(180deg);
-    background: var(--color-ground-deep);
-    display: grid;
-    place-items: center;
   }
 
-  .nb-back-mark {
-    color: var(--color-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  /* Paper depth at the spine, permanent and subtle. */
-  .nb-front::before {
+  /* Paper depth at the spine. The back face is mirrored by its own rotation, so
+     a gradient on its local left edge lands on screen-right — which is exactly
+     where the spine is for a left-hand page. One rule serves both faces. */
+  .nb-face::before {
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
-    width: 4rem;
+    width: 3.5rem;
+    z-index: 2;
     pointer-events: none;
     background: linear-gradient(
       to right,
-      rgba(20, 21, 26, 0.09),
-      rgba(20, 21, 26, 0.02) 55%,
+      rgba(20, 21, 26, 0.13),
+      rgba(20, 21, 26, 0.03) 55%,
       transparent
     );
   }
 
-  /* Swept across the page mid-turn. An animation, not a transition, because the
-     shadow has to rise and fall inside one turn — a transition can only go one
-     way. JS adds .is-turning for exactly the turn's duration. */
+  /* Swept across the sheet mid-turn. An animation, not a transition, because
+     the shadow has to rise and fall inside one turn — a transition can only go
+     one way. JS adds .is-turning for exactly the turn's duration. */
   .nb-shade {
     position: absolute;
     inset: 0;
+    z-index: 3;
     pointer-events: none;
     opacity: 0;
     background: linear-gradient(
       100deg,
-      rgba(8, 9, 11, 0.55),
-      rgba(8, 9, 11, 0.12) 45%,
+      rgba(8, 9, 11, 0.5),
+      rgba(8, 9, 11, 0.1) 45%,
       transparent 70%
     );
   }
 
-  .nb-leaf.is-turning .nb-shade {
-    animation: nb-curl 780ms cubic-bezier(0.22, 0.61, 0.24, 1);
+  .nb-sheet.is-turning .nb-shade {
+    animation: nb-curl 820ms cubic-bezier(0.22, 0.61, 0.24, 1);
   }
 
   @keyframes nb-curl {
@@ -401,170 +428,58 @@ function leavesFor(entry: CollectionEntry<'work'>) {
     100% { opacity: 0; }
   }
 
-  /* The corner fold — the affordance that says this is paper. Lifts on hover of
-     the leaf, so the invitation appears before you click anything. */
-  .nb-corner {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 2.5rem;
-    height: 2.5rem;
-    pointer-events: none;
-    background: linear-gradient(
-      315deg,
-      var(--color-ground-deep) 0%,
-      var(--color-ground-deep) 48%,
-      rgba(20, 21, 26, 0.16) 50%,
-      transparent 52%
-    );
-    transition: width 320ms ease, height 320ms ease;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .nb-leaf:not(.is-turned):hover .nb-corner {
-      width: 4rem;
-      height: 4rem;
-    }
-  }
-
-  .nb-sheet {
+  .nb-sheet-scroll {
     position: relative;
     height: 100%;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: clamp(1.5rem, 4vw, 3.25rem);
-    padding-left: clamp(2.5rem, 6vw, 5rem);
+    padding: clamp(1.25rem, 2.6vw, 2.5rem);
+    padding-left: clamp(2.75rem, 4.5vw, 4rem);
   }
 
-  .nb-numeral {
-    display: flex;
-    align-items: baseline;
-    gap: 0.9rem;
-    margin: 0 0 clamp(1.25rem, 3vh, 2rem);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .nb-roman {
-    color: var(--color-accent);
-  }
-
-  /* ── leaf content ────────────────────────────────────────────── */
-  .nb-lede {
-    margin: 0;
-    max-width: 46ch;
-    font-size: clamp(1.125rem, 1.6vw, 1.5rem);
-    line-height: 1.45;
-  }
-
-  .nb-diagram {
-    max-width: 100%;
-  }
-
-  .nb-q {
-    font-family: var(--font-sans);
-    font-size: clamp(1.125rem, 1.6vw, 1.5rem);
-    font-weight: 600;
-    margin: 0 0 1.5rem;
-    max-width: 40ch;
-  }
-
-  .nb-cols {
-    display: grid;
-    gap: 1.5rem;
-    margin-bottom: 1.75rem;
-  }
-
-  @media (min-width: 46rem) {
-    .nb-cols {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 2.5rem;
-    }
-  }
-
-  .nb-key {
-    margin: 0 0 0.5rem;
-    color: var(--color-muted);
-    text-transform: lowercase;
-  }
-
-  .nb-chose {
-    margin: 0;
-    color: var(--color-accent);
-    max-width: 30ch;
-  }
-
-  .nb-rejected {
-    margin: 0;
+  /* ── click zones ─────────────────────────────────────────────── */
+  /* Transparent halves over the spread. A <button> rather than a div so the
+     turn is reachable by keyboard and announced, and so it needs no role. */
+  .nb-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    z-index: 20;
+    border: 0;
+    background: transparent;
     padding: 0;
-    list-style: none;
-    color: var(--color-muted);
-    display: grid;
-    gap: 0.5rem;
-    max-width: 34ch;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
-  .nb-why {
-    margin: 0 0 1rem;
-    max-width: 62ch;
-    color: var(--color-muted);
-    font-size: 0.975rem;
-    line-height: 1.6;
+  .nb-zone-back {
+    left: 0;
+    cursor: w-resize;
   }
 
-  .nb-figure {
-    font-family: var(--font-mono);
-    font-size: clamp(1.5rem, 3vw, 2.25rem);
-    margin: 0 0 1rem;
+  .nb-zone-fwd {
+    right: 0;
+    cursor: e-resize;
   }
 
-  .nb-stack,
-  .nb-chips {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .nb-zone:disabled {
+    cursor: default;
   }
 
-  .nb-stack li,
-  .nb-chips li {
-    border: 1px solid var(--color-rule);
-    border-radius: 0.25rem;
-    padding: 0.4rem 0.7rem;
+  .nb-zone:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -4px;
   }
 
   /* ── nav ─────────────────────────────────────────────────────── */
   .nb-nav {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
     color: #f2f1ed;
-  }
-
-  .nb-arrow {
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    line-height: 1;
-    color: #f2f1ed;
-    background: transparent;
-    border: 1px solid rgba(242, 241, 237, 0.3);
-    border-radius: 0.25rem;
-    padding: 0.55rem 0.8rem;
-    cursor: pointer;
-    transition: background-color 200ms ease, color 200ms ease, opacity 200ms ease;
-  }
-
-  .nb-arrow:hover:not(:disabled),
-  .nb-arrow:focus-visible {
-    background: #f2f1ed;
-    color: #14151a;
-  }
-
-  .nb-arrow:disabled {
-    opacity: 0.3;
-    cursor: default;
   }
 
   .nb-index {
@@ -572,7 +487,6 @@ function leavesFor(entry: CollectionEntry<'work'>) {
     margin: 0;
     padding: 0;
     display: flex;
-    flex: 1;
     flex-wrap: wrap;
     gap: 0.35rem;
   }
@@ -607,9 +521,14 @@ function leavesFor(entry: CollectionEntry<'work'>) {
 
   .nb-dot-label {
     display: none;
-    /* .meta sets color: var(--color-muted), which is dark ink here — this
-       chrome sits on the dark backdrop, not on paper, so it has to opt out. */
+    /* .meta sets color: var(--color-muted), which is dark ink — this chrome
+       sits on the dark backdrop, not on paper, so it has to opt out. */
     color: inherit;
+  }
+
+  .nb-hint {
+    margin: 0;
+    color: rgba(242, 241, 237, 0.4);
   }
 
   @media (min-width: 46rem) {
@@ -672,7 +591,18 @@ function leavesFor(entry: CollectionEntry<'work'>) {
   }
 
   .nb-chips {
-    margin-bottom: 1.5rem;
+    list-style: none;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .nb-chips li {
+    border: 1px solid var(--color-rule);
+    border-radius: 0.25rem;
+    padding: 0.4rem 0.7rem;
   }
 
   .nb-links {
@@ -728,11 +658,13 @@ function leavesFor(entry: CollectionEntry<'work'>) {
   }
 
   /* ── small screens ───────────────────────────────────────────── */
+  /* Two pages side by side below this width would be ~180px each, which is not
+     reading. The book keeps its spread and the viewport becomes a window onto
+     one page of it — same sheets, same turns, half as much shown at a time. */
   @media (max-width: 46rem) {
     .nb {
       width: 100vw;
       height: 100svh;
-      margin: 0;
       max-height: 100svh;
     }
     .nb-shell {
@@ -744,6 +676,19 @@ function leavesFor(entry: CollectionEntry<'work'>) {
     .nb-btn {
       flex: 1;
     }
+    .nb-viewport {
+      overflow: hidden;
+    }
+    .nb-book {
+      width: 200%;
+      transition: transform 420ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nb-book[data-half='right'] {
+      transform: translateX(-50%);
+    }
+    .nb-hint {
+      display: none;
+    }
   }
 </style>
 
@@ -752,62 +697,120 @@ function leavesFor(entry: CollectionEntry<'work'>) {
     const books = document.querySelectorAll('.nb');
     if (!books.length || typeof HTMLDialogElement === 'undefined') return;
 
-    /** Matches the .nb-leaf transition duration; the shading animation shares it. */
-    const TURN_MS = 780;
+    /** Matches the .nb-sheet transition duration; the shading animation shares it. */
+    const TURN_MS = 820;
+    const narrow = window.matchMedia('(max-width: 46rem)');
 
     books.forEach((dlg) => {
       const book = dlg.querySelector('[data-nb-book]');
-      const leaves = Array.from(dlg.querySelectorAll('[data-nb-leaf]'));
+      const viewport = dlg.querySelector('[data-nb-viewport]');
+      const sheets = Array.from(dlg.querySelectorAll('[data-nb-sheet]'));
       const dots = Array.from(dlg.querySelectorAll('[data-nb-go]'));
-      const prev = dlg.querySelector('[data-nb-prev]');
-      const next = dlg.querySelector('[data-nb-next]');
+      const zoneBack = dlg.querySelector('[data-nb-prev]');
+      const zoneFwd = dlg.querySelector('[data-nb-next]');
       const detailsLayer = dlg.querySelector('[data-nb-details-layer]');
+      const nav = dlg.querySelector('.nb-nav');
       const shell = dlg.querySelector('.nb-shell');
-      if (!book || !leaves.length) return;
+      if (!book || !sheets.length) return;
 
-      let at = 0;
+      const total = Number(book.dataset.pages);
+      /** Highest turn state that still brings a new page into view. */
+      const tMax = Math.ceil((total - 1) / 2);
+      /** Which spread a given page appears in: fronts are even, backs are odd. */
+      const spreadOf = (i) => Math.ceil(i / 2);
+
+      // State is the page you are reading. The spread follows from it, which
+      // keeps the index, the desktop spread stepper and the narrow-screen page
+      // stepper all driving one number instead of three.
+      let page = 0;
+      let turnState = 0;
 
       function render() {
-        leaves.forEach((leaf, i) => leaf.classList.toggle('is-turned', i < at));
-        dots.forEach((d, i) => d.setAttribute('aria-current', String(i === at)));
-        if (prev) prev.disabled = at === 0;
-        if (next) next.disabled = at === leaves.length - 1;
+        const t = Math.min(tMax, spreadOf(page));
+        if (t !== turnState) {
+          const lo = Math.min(turnState, t);
+          const hi = Math.max(turnState, t);
+          for (let k = lo; k < hi; k++) {
+            const sheet = sheets[k];
+            if (!sheet) continue;
+            sheet.classList.add('is-turning');
+            setTimeout(() => sheet.classList.remove('is-turning'), TURN_MS);
+          }
+          turnState = t;
+        }
+        sheets.forEach((s, k) => s.classList.toggle('is-turned', k < t));
+
+        // On a narrow viewport the window pans to the page you are on; on a
+        // wide one both pages are visible and the attribute means nothing.
+        book.dataset.half = narrow.matches ? (page % 2 === 0 ? 'right' : 'left') : '';
+
+        dots.forEach((d, i) => {
+          const visible = narrow.matches ? i === page : spreadOf(i) === t;
+          d.setAttribute('aria-current', String(visible));
+        });
+
+        zoneBack.disabled = page === 0;
+        zoneFwd.disabled = narrow.matches ? page >= total - 1 : t >= tMax;
       }
 
       function go(to) {
-        const target = Math.max(0, Math.min(leaves.length - 1, to));
-        if (target === at) return;
-        // Flag every leaf that actually moves, so a jump from the index sweeps
-        // the shading across all of them rather than only the first.
-        const lo = Math.min(at, target);
-        const hi = Math.max(at, target);
-        for (let i = lo; i < hi; i++) {
-          const leaf = leaves[i];
-          leaf.classList.add('is-turning');
-          setTimeout(() => leaf.classList.remove('is-turning'), TURN_MS);
-        }
-        at = target;
+        const next = Math.max(0, Math.min(total - 1, to));
+        if (next === page) return;
+        page = next;
         render();
       }
 
-      dots.forEach((d) => d.addEventListener('click', () => go(Number(d.dataset.nbGo))));
-      prev?.addEventListener('click', () => go(at - 1));
-      next?.addEventListener('click', () => go(at + 1));
+      /** Forward one spread on a wide screen, one page on a narrow one. */
+      function forward() {
+        if (narrow.matches) return go(page + 1);
+        const t = Math.min(tMax, spreadOf(page) + 1);
+        go(Math.min(total - 1, t * 2));
+      }
 
+      function back() {
+        if (narrow.matches) return go(page - 1);
+        const t = Math.max(0, spreadOf(page) - 1);
+        go(Math.min(total - 1, t * 2));
+      }
+
+      // The zones cover the pages, so a click on a link inside a page would
+      // never reach it. Look at what is actually underneath the pointer first
+      // and hand the click over before treating it as a page turn.
+      function throughTo(e) {
+        const zone = e.currentTarget;
+        zone.style.pointerEvents = 'none';
+        const under = document.elementFromPoint(e.clientX, e.clientY);
+        zone.style.pointerEvents = '';
+        const interactive = under && under.closest('a, button');
+        if (interactive && !interactive.classList.contains('nb-zone')) {
+          interactive.click();
+          return true;
+        }
+        return false;
+      }
+
+      zoneBack.addEventListener('click', (e) => {
+        if (!throughTo(e)) back();
+      });
+      zoneFwd.addEventListener('click', (e) => {
+        if (!throughTo(e)) forward();
+      });
+
+      dots.forEach((d) => d.addEventListener('click', () => go(Number(d.dataset.nbGo))));
       dlg.querySelector('[data-nb-close]')?.addEventListener('click', () => dlg.close());
 
       // Details layer. The book is marked inert rather than nesting a second
       // <dialog>, which would fight this one's focus trap.
       const openDetails = () => {
         detailsLayer.hidden = false;
-        book.inert = true;
-        dlg.querySelector('.nb-nav').inert = true;
+        viewport.inert = true;
+        nav.inert = true;
         detailsLayer.querySelector('a, button')?.focus();
       };
       const closeDetails = () => {
         detailsLayer.hidden = true;
-        book.inert = false;
-        dlg.querySelector('.nb-nav').inert = false;
+        viewport.inert = false;
+        nav.inert = false;
         dlg.querySelector('[data-nb-details]')?.focus();
       };
       dlg.querySelector('[data-nb-details]')?.addEventListener('click', openDetails);
@@ -822,8 +825,8 @@ function leavesFor(entry: CollectionEntry<'work'>) {
           }
           return;
         }
-        if (e.key === 'ArrowRight') { e.preventDefault(); go(at + 1); }
-        if (e.key === 'ArrowLeft') { e.preventDefault(); go(at - 1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); forward(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); back(); }
       });
 
       // Swipe. Tracked on the shell so the gesture works over the nav too.
@@ -839,17 +842,24 @@ function leavesFor(entry: CollectionEntry<'work'>) {
         const dx = e.clientX - x0;
         const dy = e.clientY - y0;
         x0 = null;
-        // Horizontal intent only — otherwise a scroll down the sheet turns pages.
-        if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? at + 1 : at - 1);
+        // Horizontal intent only — otherwise a scroll down a page turns it.
+        if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+          if (dx < 0) forward(); else back();
+        }
       }, { passive: true });
 
-      // Reset on close so reopening starts at the first leaf.
+      // Crossing the breakpoint changes what "next" means, and can leave the
+      // pan attribute stale on a page that is no longer the one in the window.
+      narrow.addEventListener('change', render);
+
+      // Reset on close so reopening starts at the first page.
       dlg.addEventListener('close', () => {
-        at = 0;
+        page = 0;
+        turnState = 0;
         detailsLayer.hidden = true;
-        book.inert = false;
-        dlg.querySelector('.nb-nav').inert = false;
-        leaves.forEach((l) => l.classList.remove('is-turned', 'is-turning'));
+        viewport.inert = false;
+        nav.inert = false;
+        sheets.forEach((s) => s.classList.remove('is-turned', 'is-turning'));
         render();
       });
 
