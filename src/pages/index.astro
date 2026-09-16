@@ -63,7 +63,7 @@ const skillItems = skills.flatMap((g) => g.items);
 
   <!-- S2 — achievements, sticky-stacked full-height panels -->
   <section id="achievements" class="dark-panel achievements">
-    <div class="shell achievements-intro">
+    <div class="achievements-intro">
       <Reveal as="h2" class="achievements-title" lines={['Achievements']} />
     </div>
 
@@ -330,10 +330,12 @@ const skillItems = skills.flatMap((g) => g.items);
      scoped selector here would silently never match. Same story everywhere
      else below that styles a class passed into <Reveal>. */
   .landing-hero :global(.landing-name) {
+    font-family: var(--font-compress);
     font-size: var(--text-display);
-    font-weight: 600;
-    line-height: 0.95;
-    letter-spacing: -0.03em;
+    font-weight: 400;
+    text-transform: uppercase;
+    line-height: 0.92;
+    letter-spacing: 0.01em;
     margin: 0;
   }
 
@@ -362,8 +364,11 @@ const skillItems = skills.flatMap((g) => g.items);
 
   /* ── shared section heading ─────────────────────────────────── */
   :global(.section-title) {
+    font-family: var(--font-compress);
     font-size: var(--text-chapter);
-    font-weight: 600;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
     margin: 0;
   }
 
@@ -377,6 +382,10 @@ const skillItems = skills.flatMap((g) => g.items);
     --col-gap: 2rem;
     --content-indent: calc(var(--col-index) + var(--col-figure) + var(--col-gap) * 2);
     --head-h: 6.5rem;
+    /* Same thin inline pad the work section uses, so the achievements heading
+       and rows sit on the identical left edge as the project rows do — the
+       84rem centred shell they used before pulled them visibly inward. */
+    --ach-pad: clamp(0.75rem, 1.4vw, 1.5rem);
   }
 
   @media (min-width: 860px) {
@@ -386,19 +395,21 @@ const skillItems = skills.flatMap((g) => g.items);
   }
 
   .achievements-intro {
-    padding-block: clamp(3.5rem, 13vh, 8rem) clamp(2rem, 7vh, 4rem);
+    padding-block: clamp(4rem, 13vh, 8rem) clamp(2rem, 7vh, 4rem);
+    padding-inline: var(--ach-pad);
   }
 
-  /* Display serif, tracked normally: a high-contrast face like this needs its
-     own letter-fit, and the negative tracking the sans headings use closes the
-     hairlines up until they break. */
+  /* Matched to .work-title exactly — same face, same clamp, same fit — so the
+     two section headings read as one system rather than two. Anton ships a
+     single weight, hence 400 rather than a bolder number that would only
+     trigger synthesis. */
   .achievements-intro :global(.achievements-title) {
-    font-family: var(--font-display);
-    font-size: clamp(2.25rem, 8vw, 5.75rem);
-    font-weight: 500;
+    font-family: var(--font-compress);
+    font-size: clamp(2.25rem, 6.5vw, 5rem);
+    font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: 0.005em;
-    line-height: 0.98;
+    letter-spacing: 0.01em;
+    line-height: 0.92;
     margin: 0;
   }
 
@@ -426,7 +437,7 @@ const skillItems = skills.flatMap((g) => g.items);
        below would show through as this one scrolls over it. */
     background: var(--color-ground);
     border-top: 1px solid var(--color-rule);
-    padding-inline: var(--gutter);
+    padding-inline: var(--ach-pad);
   }
 
   .ach-inner {
@@ -434,8 +445,6 @@ const skillItems = skills.flatMap((g) => g.items);
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 84rem;
-    margin-inline: auto;
   }
 
   .ach-head {
@@ -480,10 +489,11 @@ const skillItems = skills.flatMap((g) => g.items);
        head — the head height is what the sticky offsets are computed from, so
        it must not grow. The serif sets wider than the sans it replaced, so the
        ceiling here is lower than the type scale would otherwise suggest. */
-    font-family: var(--font-display);
-    font-size: clamp(1.15rem, 3.4vw, 2.375rem);
-    font-weight: 500;
-    letter-spacing: 0;
+    font-family: var(--font-compress);
+    font-size: clamp(1.05rem, 2.9vw, 2.125rem);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
     line-height: 1.1;
     margin: 0;
   }
@@ -864,9 +874,12 @@ const skillItems = skills.flatMap((g) => g.items);
   }
 
   .about-copy :global(.about-name) {
+    font-family: var(--font-compress);
     font-size: var(--text-hero);
-    font-weight: 600;
-    line-height: 0.98;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 0.92;
     margin: 0;
   }
 
@@ -945,9 +958,12 @@ const skillItems = skills.flatMap((g) => g.items);
   }
 
   .outro :global(.outro-line) {
+    font-family: var(--font-compress);
     font-size: var(--text-hero);
-    font-weight: 600;
-    line-height: 0.98;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 0.92;
     margin: 0;
   }
 
