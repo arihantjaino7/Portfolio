@@ -116,12 +116,14 @@ function sheetsFor(pages: NotebookLeaf[]) {
                   <article class="nb-sheet" style={`--k:${k}`} data-nb-sheet={k}>
                     <div class="nb-face nb-front">
                       <span class="nb-shade" aria-hidden="true" />
+                      <span class="nb-gloss" aria-hidden="true" />
                       <div class="nb-sheet-scroll">
                         <NotebookPage entry={p} page={sh.front} />
                       </div>
                     </div>
                     <div class="nb-face nb-back">
                       <span class="nb-shade" aria-hidden="true" />
+                      <span class="nb-gloss" aria-hidden="true" />
                       <div class="nb-sheet-scroll">
                         <NotebookPage entry={p} page={sh.back} />
                       </div>
@@ -129,6 +131,14 @@ function sheetsFor(pages: NotebookLeaf[]) {
                   </article>
                 ))}
               </div>
+
+              {/*
+                The gutter. Sits above every sheet so the book is shaded at the
+                spine whichever page is lying there — it is the binding casting
+                onto the paper, which belongs to the book and not to any one
+                page. Below the click zones, so it never eats a click.
+              */}
+              <div class="nb-gutter" aria-hidden="true" />
             </div>
 
             {/*
@@ -225,8 +235,16 @@ function sheetsFor(pages: NotebookLeaf[]) {
 
 <style>
   /* ── shell ───────────────────────────────────────────────────── */
+  /* The notebook is set on paper, not in a dark room: a warm wash of the site's
+     own --color-ground-deep rather than the near-black this used to use. A
+     physical book reads as physical because you can see the surface it is
+     lying on and the shadow it drops onto it, which a black void cannot give. */
   .nb {
-    width: min(82rem, 100vw - 2rem);
+    --turn: 1000ms;
+    /* Warm, not neutral: paper shadows carry the colour of the paper. A grey
+       shadow under cream stock is the single thing that reads as "rendered". */
+    --paper-shade: 58, 48, 34;
+    width: min(84rem, 100vw - 2rem);
     max-width: none;
     height: min(46rem, 100svh - 2rem);
     max-height: none;
@@ -242,8 +260,8 @@ function sheetsFor(pages: NotebookLeaf[]) {
   }
 
   .nb::backdrop {
-    background: rgba(8, 9, 11, 0.86);
-    backdrop-filter: blur(3px);
+    background: rgba(230, 228, 221, 0.9);
+    backdrop-filter: blur(7px) saturate(1.05);
   }
 
   .nb-shell {
@@ -261,7 +279,6 @@ function sheetsFor(pages: NotebookLeaf[]) {
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    color: #f2f1ed;
   }
 
   .nb-title {
@@ -276,7 +293,6 @@ function sheetsFor(pages: NotebookLeaf[]) {
 
   .nb-sub {
     margin: 0.35rem 0 0;
-    color: rgba(242, 241, 237, 0.62);
   }
 
   .nb-chrome-actions {
@@ -287,9 +303,9 @@ function sheetsFor(pages: NotebookLeaf[]) {
   .nb-btn {
     font-family: var(--font-mono);
     font-size: var(--text-meta);
-    color: #f2f1ed;
+    color: var(--color-text);
     background: transparent;
-    border: 1px solid rgba(242, 241, 237, 0.3);
+    border: 1px solid var(--color-rule);
     border-radius: 0.25rem;
     padding: 0.5rem 0.85rem;
     cursor: pointer;
@@ -298,17 +314,17 @@ function sheetsFor(pages: NotebookLeaf[]) {
 
   .nb-btn:hover,
   .nb-btn:focus-visible {
-    background: #f2f1ed;
-    border-color: #f2f1ed;
-    color: #14151a;
+    background: var(--color-text);
+    border-color: var(--color-text);
+    color: var(--color-ground);
   }
 
   /* ── the book ────────────────────────────────────────────────── */
   .nb-viewport {
     position: relative;
     height: 100%;
-    /* Desktop: visible, so a sheet's drop shadow is not clipped mid-turn.
-       The narrow-screen rule flips this to hidden, which is what turns the
+    /* Desktop: visible, so a sheet's shadow is not clipped mid-turn. The
+       narrow-screen rule flips this to hidden, which is what turns the
        viewport into a window onto one page of the spread. */
     overflow: visible;
   }
@@ -322,19 +338,63 @@ function sheetsFor(pages: NotebookLeaf[]) {
     height: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    perspective: 2800px;
+    perspective: 2400px;
+    perspective-origin: 50% 46%;
+  }
+
+  /* The shadow the closed block of paper drops onto the surface under it.
+     Offset down and spread wide, because the light in this scene is high and
+     slightly front-left — the same direction every other shadow here uses. */
+  .nb-book::after {
+    content: '';
+    position: absolute;
+    left: 2%;
+    right: 2%;
+    bottom: -1.5rem;
+    height: 2.5rem;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+      60% 100% at 50% 0%,
+      rgba(var(--paper-shade), 0.34),
+      rgba(var(--paper-shade), 0.12) 55%,
+      transparent 78%
+    );
+    filter: blur(7px);
+  }
+
+  /* ── paper ───────────────────────────────────────────────────── */
+  /* One recipe, used by both the covers and every page face, so a board and a
+     sheet lying on it cannot be told apart by their stock. */
+  .nb-board,
+  .nb-face {
+    background-color: var(--color-ground);
+    background-image:
+      /* grain — an feTurbulence tile at 3%, which is what stops a flat fill
+         reading as a screen. No file: it is a few hundred bytes inline. */
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
+      /* the sheet lifting very slightly away from the spine */
+      radial-gradient(130% 100% at 100% 50%, rgba(255, 255, 255, 0.5), transparent 62%);
+    background-size: 120px 120px, auto;
   }
 
   .nb-board {
-    background: var(--color-ground-deep);
-    border-radius: 0.3rem;
     display: grid;
     place-items: center;
-    box-shadow: inset 0 0 60px rgba(20, 21, 26, 0.12);
+    box-shadow: inset 0 0 70px rgba(var(--paper-shade), 0.14);
+  }
+
+  /* Outer corners round, spine corners square — paper is only cut on the
+     outside edge. Left board rounds left, right board rounds right. */
+  .nb-board-left {
+    border-radius: 0.55rem 0 0 0.55rem;
+  }
+
+  .nb-board-right {
+    border-radius: 0 0.55rem 0.55rem 0;
   }
 
   .nb-board-mark {
-    color: var(--color-muted);
     text-transform: uppercase;
     letter-spacing: 0.14em;
   }
@@ -355,7 +415,6 @@ function sheetsFor(pages: NotebookLeaf[]) {
     transform-style: preserve-3d;
     /* The spine. Every sheet hinges on the middle of the book. */
     transform-origin: left center;
-    transition: transform 820ms cubic-bezier(0.22, 0.61, 0.24, 1);
     z-index: calc(var(--sheets) - var(--k));
   }
 
@@ -369,41 +428,119 @@ function sheetsFor(pages: NotebookLeaf[]) {
     z-index: calc(var(--sheets) + var(--k) + 1);
   }
 
+  /* The turn is keyframed rather than transitioned. A transition can only
+     interpolate between two transforms; a page does not travel in a straight
+     line — it lifts off the block, swings, and settles. The z lift and the
+     eased middle are what that difference looks like.
+     `both` holds the end state for the animation's duration; the .is-turned
+     class (already applied) holds it afterwards, so there is no snap. */
+  /* linear, deliberately: a keyframe list re-applies its timing function to
+     every pair, so a bezier across five keyframes eases in and out five times
+     and the swing arrives in lurches. The easing is baked into the angles
+     instead — they follow -178·sin²(πp/2), one continuous curve — and the
+     clock that walks them stays even. */
+  .nb-sheet.is-turning-fwd {
+    animation: nb-turn-fwd var(--turn) linear both;
+  }
+
+  .nb-sheet.is-turning-back {
+    animation: nb-turn-back var(--turn) linear both;
+  }
+
+  /* The z lift is a bell, 22·sin(πp): the sheet rises off the block as it
+     starts, is highest when it stands edge-on, and settles flat again. A page
+     that swings without lifting reads as a door. */
+  @keyframes nb-turn-fwd {
+    0% { transform: rotateY(0deg) translateZ(0); }
+    10% { transform: rotateY(-4.3deg) translateZ(6.8px); }
+    20% { transform: rotateY(-16.9deg) translateZ(12.9px); }
+    30% { transform: rotateY(-36.7deg) translateZ(17.8px); }
+    40% { transform: rotateY(-61.4deg) translateZ(20.9px); }
+    50% { transform: rotateY(-89deg) translateZ(22px); }
+    60% { transform: rotateY(-116.6deg) translateZ(20.9px); }
+    70% { transform: rotateY(-141.3deg) translateZ(17.8px); }
+    80% { transform: rotateY(-161.1deg) translateZ(12.9px); }
+    90% { transform: rotateY(-173.7deg) translateZ(6.8px); }
+    100% { transform: rotateY(-178deg) translateZ(0); }
+  }
+
+  @keyframes nb-turn-back {
+    0% { transform: rotateY(-178deg) translateZ(0); }
+    10% { transform: rotateY(-173.7deg) translateZ(6.8px); }
+    20% { transform: rotateY(-161.1deg) translateZ(12.9px); }
+    30% { transform: rotateY(-141.3deg) translateZ(17.8px); }
+    40% { transform: rotateY(-116.6deg) translateZ(20.9px); }
+    50% { transform: rotateY(-89deg) translateZ(22px); }
+    60% { transform: rotateY(-61.4deg) translateZ(20.9px); }
+    70% { transform: rotateY(-36.7deg) translateZ(17.8px); }
+    80% { transform: rotateY(-16.9deg) translateZ(12.9px); }
+    90% { transform: rotateY(-4.3deg) translateZ(6.8px); }
+    100% { transform: rotateY(0deg) translateZ(0); }
+  }
+
   .nb-face {
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-    background: var(--color-ground);
-    border-radius: 0.3rem;
     overflow: hidden;
-    box-shadow: 0 24px 60px rgba(8, 9, 11, 0.45);
+    /* Both faces round their local right edge. The back is mirrored by its own
+       rotation, so that edge lands on screen-left — the outer edge of the
+       left-hand page. One rule, correct on both sides. */
+    border-radius: 0 0.55rem 0.55rem 0;
+    box-shadow:
+      0 1px 2px rgba(var(--paper-shade), 0.14),
+      0 14px 34px rgba(var(--paper-shade), 0.16);
   }
 
   .nb-back {
     transform: rotateY(180deg);
   }
 
-  /* Paper depth at the spine. The back face is mirrored by its own rotation, so
-     a gradient on its local left edge lands on screen-right — which is exactly
-     where the spine is for a left-hand page. One rule serves both faces. */
+  /* The gutter shading that belongs to the page rather than to the book: the
+     paper curving down into the binding. Wider and softer than a hairline,
+     because a curve has no edge. */
   .nb-face::before {
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
-    width: 3.5rem;
+    width: clamp(2.5rem, 7%, 5.5rem);
     z-index: 2;
     pointer-events: none;
     background: linear-gradient(
       to right,
-      rgba(20, 21, 26, 0.13),
-      rgba(20, 21, 26, 0.03) 55%,
+      rgba(var(--paper-shade), 0.26),
+      rgba(var(--paper-shade), 0.13) 26%,
+      rgba(var(--paper-shade), 0.04) 60%,
       transparent
     );
   }
 
+  /* The binding itself, above every sheet: the dark seam where the two halves
+     of the block meet, plus the shadow it throws a little way onto each page. */
+  .nb-gutter {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: clamp(3rem, 8vw, 7rem);
+    transform: translateX(-50%);
+    z-index: 15;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        to right,
+        transparent,
+        rgba(var(--paper-shade), 0.06) 32%,
+        rgba(var(--paper-shade), 0.16) 47%,
+        rgba(var(--paper-shade), 0.16) 53%,
+        rgba(var(--paper-shade), 0.06) 68%,
+        transparent
+      );
+  }
+
   /* Swept across the sheet mid-turn. An animation, not a transition, because
      the shadow has to rise and fall inside one turn — a transition can only go
-     one way. JS adds .is-turning for exactly the turn's duration. */
+     one way. */
   .nb-shade {
     position: absolute;
     inset: 0;
@@ -412,24 +549,58 @@ function sheetsFor(pages: NotebookLeaf[]) {
     opacity: 0;
     background: linear-gradient(
       100deg,
-      rgba(8, 9, 11, 0.5),
-      rgba(8, 9, 11, 0.1) 45%,
+      rgba(var(--paper-shade), 0.55),
+      rgba(var(--paper-shade), 0.14) 45%,
       transparent 70%
     );
   }
 
-  .nb-sheet.is-turning .nb-shade {
-    animation: nb-curl 820ms cubic-bezier(0.22, 0.61, 0.24, 1);
+  /* The crease. A narrow band of light travelling across the page as it swings
+     — what you actually see on a turning sheet is the highlight running along
+     the bend, not the bend itself. Cheaper than deforming the geometry and,
+     at this speed, not distinguishable from it. */
+  .nb-gloss {
+    position: absolute;
+    inset: -20% -10%;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      102deg,
+      transparent 26%,
+      rgba(255, 255, 255, 0.34) 41%,
+      rgba(255, 255, 255, 0.78) 48%,
+      rgba(255, 255, 255, 0.34) 55%,
+      transparent 70%
+    );
+  }
+
+  .nb-sheet.is-turning-fwd .nb-shade,
+  .nb-sheet.is-turning-back .nb-shade {
+    animation: nb-curl var(--turn) linear;
+  }
+
+  .nb-sheet.is-turning-fwd .nb-gloss,
+  .nb-sheet.is-turning-back .nb-gloss {
+    animation: nb-gloss var(--turn) linear;
   }
 
   @keyframes nb-curl {
     0% { opacity: 0; }
-    42% { opacity: 1; }
+    46% { opacity: 1; }
     100% { opacity: 0; }
+  }
+
+  @keyframes nb-gloss {
+    0% { opacity: 0; transform: translateX(-42%); }
+    40% { opacity: 1; }
+    62% { opacity: 0.9; }
+    100% { opacity: 0; transform: translateX(38%); }
   }
 
   .nb-sheet-scroll {
     position: relative;
+    z-index: 1;
     height: 100%;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -479,7 +650,6 @@ function sheetsFor(pages: NotebookLeaf[]) {
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    color: #f2f1ed;
   }
 
   .nb-index {
@@ -497,21 +667,21 @@ function sheetsFor(pages: NotebookLeaf[]) {
     gap: 0.5rem;
     background: transparent;
     border: 0;
-    border-top: 1px solid rgba(242, 241, 237, 0.24);
+    border-top: 1px solid var(--color-rule);
     padding: 0.5rem 0.65rem 0.4rem;
     cursor: pointer;
-    color: rgba(242, 241, 237, 0.55);
+    color: var(--color-muted);
     transition: color 200ms ease, border-color 200ms ease;
   }
 
   .nb-dot:hover,
   .nb-dot:focus-visible {
-    color: #f2f1ed;
-    border-color: #f2f1ed;
+    color: var(--color-text);
+    border-color: var(--color-text);
   }
 
   .nb-dot[aria-current='true'] {
-    color: #f2f1ed;
+    color: var(--color-text);
     border-color: var(--color-accent);
   }
 
@@ -521,14 +691,11 @@ function sheetsFor(pages: NotebookLeaf[]) {
 
   .nb-dot-label {
     display: none;
-    /* .meta sets color: var(--color-muted), which is dark ink — this chrome
-       sits on the dark backdrop, not on paper, so it has to opt out. */
     color: inherit;
   }
 
   .nb-hint {
     margin: 0;
-    color: rgba(242, 241, 237, 0.4);
   }
 
   @media (min-width: 46rem) {
@@ -545,7 +712,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     display: grid;
     place-items: center;
     padding: 1rem;
-    background: rgba(8, 9, 11, 0.55);
+    background: rgba(var(--paper-shade), 0.4);
     border-radius: 0.3rem;
   }
 
@@ -560,7 +727,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     background: var(--color-ground);
     border-radius: 0.3rem;
     padding: clamp(1.5rem, 4vw, 2.5rem);
-    box-shadow: 0 30px 80px rgba(8, 9, 11, 0.6);
+    box-shadow: 0 30px 80px rgba(var(--paper-shade), 0.45);
   }
 
   .nb-card-title {
@@ -650,13 +817,6 @@ function sheetsFor(pages: NotebookLeaf[]) {
     border-color: var(--color-rule);
   }
 
-  .nb-card-close:hover,
-  .nb-card-close:focus-visible {
-    background: var(--color-text);
-    color: var(--color-ground);
-    border-color: var(--color-text);
-  }
-
   /* ── small screens ───────────────────────────────────────────── */
   /* Two pages side by side below this width would be ~180px each, which is not
      reading. The book keeps its spread and the viewport becomes a window onto
@@ -686,6 +846,11 @@ function sheetsFor(pages: NotebookLeaf[]) {
     .nb-book[data-half='right'] {
       transform: translateX(-50%);
     }
+    /* The book is panned, so its own ground shadow would sit under whichever
+       half is off-screen as often as not. */
+    .nb-book::after {
+      display: none;
+    }
     .nb-hint {
       display: none;
     }
@@ -697,8 +862,8 @@ function sheetsFor(pages: NotebookLeaf[]) {
     const books = document.querySelectorAll('.nb');
     if (!books.length || typeof HTMLDialogElement === 'undefined') return;
 
-    /** Matches the .nb-sheet transition duration; the shading animation shares it. */
-    const TURN_MS = 820;
+    /** Matches --turn in the stylesheet; the shading and gloss share it. */
+    const TURN_MS = 1000;
     const narrow = window.matchMedia('(max-width: 46rem)');
 
     books.forEach((dlg) => {
@@ -730,11 +895,19 @@ function sheetsFor(pages: NotebookLeaf[]) {
         if (t !== turnState) {
           const lo = Math.min(turnState, t);
           const hi = Math.max(turnState, t);
+          // Direction matters: the turn is a keyframe animation now, not a
+          // transition, so going back has to play its own reversed keyframes
+          // rather than replaying the forward ones.
+          const cls = t > turnState ? 'is-turning-fwd' : 'is-turning-back';
           for (let k = lo; k < hi; k++) {
             const sheet = sheets[k];
             if (!sheet) continue;
-            sheet.classList.add('is-turning');
-            setTimeout(() => sheet.classList.remove('is-turning'), TURN_MS);
+            sheet.classList.remove('is-turning-fwd', 'is-turning-back');
+            // Force a reflow so re-turning the same sheet restarts the
+            // animation instead of the browser treating it as unchanged.
+            void sheet.offsetWidth;
+            sheet.classList.add(cls);
+            setTimeout(() => sheet.classList.remove(cls), TURN_MS);
           }
           turnState = t;
         }
@@ -859,7 +1032,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
         detailsLayer.hidden = true;
         viewport.inert = false;
         nav.inert = false;
-        sheets.forEach((s) => s.classList.remove('is-turned', 'is-turning'));
+        sheets.forEach((s) => s.classList.remove('is-turned', 'is-turning-fwd', 'is-turning-back'));
         render();
       });
 
