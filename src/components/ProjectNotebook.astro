@@ -107,6 +107,16 @@ function sheetsFor(pages: NotebookLeaf[]) {
                 sheet is currently lying. Left is bare until the first turn,
                 right goes bare on the last spread of an even-paged book.
               */}
+              {/*
+                The book sits on a surface, so its shadow is three pools of
+                different softness rather than one box-shadow — and all three
+                lighten as a leaf lifts off the block, because a page in the
+                air is no longer pressing anything down.
+              */}
+              <span class="nb-cast nb-cast-ambient" aria-hidden="true" />
+              <span class="nb-cast nb-cast-contact" aria-hidden="true" />
+              <span class="nb-cast nb-cast-hair" aria-hidden="true" />
+
               <div class="nb-board nb-board-left" aria-hidden="true">
                 <span class="nb-board-mark meta">{p.data.title}</span>
               </div>
@@ -139,6 +149,11 @@ function sheetsFor(pages: NotebookLeaf[]) {
                 page. Below the click zones, so it never eats a click.
               */}
               <div class="nb-gutter" aria-hidden="true" />
+
+              {/* The shadow the lifting leaf throws onto the page beneath it.
+                  Nothing at rest; it exists only while a page is in the air. */}
+              <span class="nb-throw nb-throw-left" aria-hidden="true" />
+              <span class="nb-throw nb-throw-right" aria-hidden="true" />
             </div>
 
             {/*
@@ -349,25 +364,142 @@ function sheetsFor(pages: NotebookLeaf[]) {
     perspective-origin: 50% 46%;
   }
 
-  /* The shadow the closed block of paper drops onto the surface under it.
-     Offset down and spread wide, because the light in this scene is high and
-     slightly front-left — the same direction every other shadow here uses. */
-  .nb-book::after {
-    content: '';
+  /* Three pools rather than one box-shadow: a wide ambient one, a tighter
+     contact one, and a hairline directly under the block. A single shadow can
+     only be soft or tight; paper resting on a surface is both at once, at
+     different distances. Each fades to nothing well inside its own bounds, so
+     none of them has an edge of its own. */
+  .nb-cast {
     position: absolute;
-    left: 2%;
-    right: 2%;
-    bottom: -0.9rem;
-    height: 1.5rem;
     z-index: -1;
     pointer-events: none;
+  }
+
+  .nb-cast-ambient {
+    left: 3%;
+    right: 3%;
+    top: 40%;
+    bottom: -1.4rem;
     background: radial-gradient(
-      58% 100% at 50% 0%,
-      rgba(var(--paper-shade), 0.15),
-      rgba(var(--paper-shade), 0.05) 55%,
-      transparent 80%
+      50% 50% at 50% 66%,
+      rgba(var(--paper-shade), 0.15) 0%,
+      rgba(var(--paper-shade), 0.08) 40%,
+      rgba(var(--paper-shade), 0) 74%
+    );
+    filter: blur(20px);
+  }
+
+  .nb-cast-contact {
+    left: 8%;
+    right: 8%;
+    top: 74%;
+    bottom: -0.8rem;
+    background: radial-gradient(
+      50% 44% at 50% 46%,
+      rgba(var(--paper-shade), 0.16) 0%,
+      rgba(var(--paper-shade), 0.07) 48%,
+      rgba(var(--paper-shade), 0) 78%
     );
     filter: blur(9px);
+  }
+
+  .nb-cast-hair {
+    left: 12%;
+    right: 12%;
+    top: 88%;
+    bottom: -0.35rem;
+    background: radial-gradient(
+      50% 52% at 50% 42%,
+      rgba(var(--paper-shade), 0.15) 0%,
+      rgba(var(--paper-shade), 0) 76%
+    );
+    filter: blur(3px);
+  }
+
+  /* All three lighten while a leaf is in the air: a page that has lifted off
+     the block is no longer pressing anything down. The tighter the shadow, the
+     more of it the lift takes away. opacity = 1 - sin(pi*p) * k */
+  .nb-book.is-turning .nb-cast-ambient { animation: nb-cast-a var(--turn) linear; }
+  .nb-book.is-turning .nb-cast-contact { animation: nb-cast-b var(--turn) linear; }
+  .nb-book.is-turning .nb-cast-hair { animation: nb-cast-c var(--turn) linear; }
+
+  @keyframes nb-cast-a {
+    0%, 100% { opacity: 1; }
+    10% { opacity: 0.87; }
+    20% { opacity: 0.753; }
+    30% { opacity: 0.66; }
+    40% { opacity: 0.601; }
+    50% { opacity: 0.58; }
+    60% { opacity: 0.601; }
+    70% { opacity: 0.66; }
+    80% { opacity: 0.753; }
+    90% { opacity: 0.87; }
+  }
+
+  @keyframes nb-cast-b {
+    0%, 100% { opacity: 1; }
+    10% { opacity: 0.846; }
+    20% { opacity: 0.706; }
+    30% { opacity: 0.596; }
+    40% { opacity: 0.525; }
+    50% { opacity: 0.5; }
+    60% { opacity: 0.525; }
+    70% { opacity: 0.596; }
+    80% { opacity: 0.706; }
+    90% { opacity: 0.846; }
+  }
+
+  @keyframes nb-cast-c {
+    0%, 100% { opacity: 1; }
+    10% { opacity: 0.808; }
+    20% { opacity: 0.635; }
+    30% { opacity: 0.498; }
+    40% { opacity: 0.41; }
+    50% { opacity: 0.38; }
+    60% { opacity: 0.41; }
+    70% { opacity: 0.498; }
+    80% { opacity: 0.635; }
+    90% { opacity: 0.808; }
+  }
+
+  /* The shadow the lifting leaf throws across the page beneath it. Masked to
+     nothing at the head and foot, because a page is not a wall — light gets in
+     over the top and bottom edges of the block. opacity = sin(pi*p) * 0.62 */
+  .nb-throw {
+    position: absolute;
+    top: 4%;
+    bottom: 4%;
+    width: 22%;
+    z-index: 14;
+    opacity: 0;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+  }
+
+  .nb-throw-left {
+    right: 50%;
+    background: linear-gradient(270deg, rgba(var(--paper-shade), 0.3), rgba(var(--paper-shade), 0) 82%);
+  }
+
+  .nb-throw-right {
+    left: 50%;
+    background: linear-gradient(90deg, rgba(var(--paper-shade), 0.24), rgba(var(--paper-shade), 0) 82%);
+  }
+
+  .nb-book.is-turning .nb-throw { animation: nb-throw var(--turn) linear; }
+
+  @keyframes nb-throw {
+    0%, 100% { opacity: 0; }
+    10% { opacity: 0.192; }
+    20% { opacity: 0.365; }
+    30% { opacity: 0.502; }
+    40% { opacity: 0.59; }
+    50% { opacity: 0.62; }
+    60% { opacity: 0.59; }
+    70% { opacity: 0.502; }
+    80% { opacity: 0.365; }
+    90% { opacity: 0.192; }
   }
 
   /* ── paper ───────────────────────────────────────────────────── */
@@ -563,20 +695,37 @@ function sheetsFor(pages: NotebookLeaf[]) {
       );
   }
 
-  /* Swept across the sheet mid-turn. An animation, not a transition, because
-     the shadow has to rise and fall inside one turn — a transition can only go
-     one way. */
+  /* Shading and gloss are derived from how the sheet faces the light rather
+     than hand-drawn: lit = |cos(angle)|, and since the angle is baked into the
+     turn keyframes, so are these. The shadow is (1 - lit) * 0.62 and the gloss
+     is sin(pi*p) * lit^2 * 0.2 — which means the gloss peaks TWICE, at roughly
+     30 and 150 degrees, and disappears at edge-on. That is the opposite of a
+     single sweep across the middle, and it is what a real page does: a sheet
+     turned edge-on to you catches no light at all. */
   .nb-shade {
     position: absolute;
-    inset: 0;
+    inset: 4% 0;
     z-index: 3;
     pointer-events: none;
     opacity: 0;
     background: linear-gradient(
-      100deg,
-      rgba(var(--paper-shade), 0.26),
-      rgba(var(--paper-shade), 0.07) 45%,
-      transparent 70%
+      90deg,
+      rgba(var(--paper-shade), 0.62),
+      rgba(var(--paper-shade), 0.22) 55%,
+      rgba(var(--paper-shade), 0.06) 100%
+    );
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+  }
+
+  /* The back face is mirrored, so its shading has to run the other way to keep
+     falling toward the same spine. */
+  .nb-back .nb-shade {
+    background: linear-gradient(
+      270deg,
+      rgba(var(--paper-shade), 0.62),
+      rgba(var(--paper-shade), 0.22) 55%,
+      rgba(var(--paper-shade), 0.06) 100%
     );
   }
 
@@ -586,18 +735,13 @@ function sheetsFor(pages: NotebookLeaf[]) {
      at this speed, not distinguishable from it. */
   .nb-gloss {
     position: absolute;
-    inset: -20% -10%;
+    inset: 4% 0;
     z-index: 4;
     pointer-events: none;
     opacity: 0;
-    background: linear-gradient(
-      102deg,
-      transparent 26%,
-      rgba(255, 255, 255, 0.18) 41%,
-      rgba(255, 255, 255, 0.44) 48%,
-      rgba(255, 255, 255, 0.18) 55%,
-      transparent 70%
-    );
+    background: #fffaf0;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
   }
 
   .nb-sheet.is-turning-fwd .nb-shade,
@@ -610,17 +754,32 @@ function sheetsFor(pages: NotebookLeaf[]) {
     animation: nb-gloss var(--turn) linear;
   }
 
+  /* (1 - |cos(angle)|) * 0.62 */
   @keyframes nb-curl {
-    0% { opacity: 0; }
-    46% { opacity: 1; }
-    100% { opacity: 0; }
+    0%, 100% { opacity: 0; }
+    10% { opacity: 0.002; }
+    20% { opacity: 0.027; }
+    30% { opacity: 0.123; }
+    40% { opacity: 0.323; }
+    50% { opacity: 0.609; }
+    60% { opacity: 0.342; }
+    70% { opacity: 0.136; }
+    80% { opacity: 0.033; }
+    90% { opacity: 0.004; }
   }
 
+  /* sin(pi*p) * cos(angle)^2 * 0.2 — two peaks, dark at edge-on */
   @keyframes nb-gloss {
-    0% { opacity: 0; transform: translateX(-42%); }
-    40% { opacity: 1; }
-    62% { opacity: 0.9; }
-    100% { opacity: 0; transform: translateX(38%); }
+    0%, 100% { opacity: 0; }
+    10% { opacity: 0.061; }
+    20% { opacity: 0.108; }
+    30% { opacity: 0.104; }
+    40% { opacity: 0.044; }
+    50% { opacity: 0; }
+    60% { opacity: 0.038; }
+    70% { opacity: 0.099; }
+    80% { opacity: 0.105; }
+    90% { opacity: 0.061; }
   }
 
   .nb-sheet-scroll {
@@ -873,9 +1032,9 @@ function sheetsFor(pages: NotebookLeaf[]) {
     .nb-book[data-half='right'] {
       transform: translateX(-50%);
     }
-    /* The book is panned, so its own ground shadow would sit under whichever
+    /* The book is panned, so its own ground shadows would sit under whichever
        half is off-screen as often as not. */
-    .nb-book::after {
+    .nb-cast {
       display: none;
     }
     .nb-hint {
@@ -916,6 +1075,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
       // stepper all driving one number instead of three.
       let page = 0;
       let turnState = 0;
+      let bookTurnTimer = 0;
 
       function render() {
         const t = Math.min(tMax, spreadOf(page));
@@ -937,6 +1097,13 @@ function sheetsFor(pages: NotebookLeaf[]) {
             setTimeout(() => sheet.classList.remove(cls), TURN_MS);
           }
           turnState = t;
+          // The cast shadows and the gutter throw belong to the book rather
+          // than to any one sheet, so they are driven from here.
+          book.classList.remove('is-turning');
+          void book.offsetWidth;
+          book.classList.add('is-turning');
+          clearTimeout(bookTurnTimer);
+          bookTurnTimer = setTimeout(() => book.classList.remove('is-turning'), TURN_MS);
         }
         sheets.forEach((s, k) => s.classList.toggle('is-turned', k < t));
 
@@ -1054,6 +1221,8 @@ function sheetsFor(pages: NotebookLeaf[]) {
         detailsLayer.hidden = true;
         viewport.inert = false;
         nav.inert = false;
+        clearTimeout(bookTurnTimer);
+        book.classList.remove('is-turning');
         sheets.forEach((s) => s.classList.remove('is-turned', 'is-turning-fwd', 'is-turning-back'));
         render();
       });
