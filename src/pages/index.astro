@@ -13,7 +13,7 @@ import HeroCanvas from '../components/HeroCanvas.astro';
 import { assets } from '../config/assets';
 import { withBase } from '../config/paths';
 import { person, achievements, skills, links } from '../config/site';
-import ProjectNotebook from '../components/ProjectNotebook.astro';
+import ProjectCard from '../components/ProjectCard.astro';
 
 const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order,
@@ -138,7 +138,7 @@ const skillItems = skills.flatMap((g) => g.items);
         {
           projects.map((p) => (
             <li class="proj">
-              <a class="proj-link" href={withBase(`/work/${p.id}`)} data-notebook={p.id}>
+              <a class="proj-link" href={withBase(`/work/${p.id}`)} data-card={p.id}>
                 <span class="proj-panel" aria-hidden="true" />
                 <span class="proj-meta meta">
                   {p.data.category ? `${p.data.year}, ${p.data.category}` : String(p.data.year)}
@@ -188,7 +188,7 @@ const skillItems = skills.flatMap((g) => g.items);
       One <dialog> per project, rendered server-side. With JS off these never
       open and every row stays an ordinary link to its case study.
     -->
-    <ProjectNotebook projects={projects} />
+    <ProjectCard projects={projects} />
   </section>
 
   <!-- S4 — about -->

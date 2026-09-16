@@ -32,6 +32,13 @@ const work = defineCollection({
      * case study renders without it rather than failing the build.
      */
     category: z.string().optional(),
+    /**
+     * The card's line. `summary` states what the thing is in one breath, which
+     * is right for a meta description and wrong for the first thing a person
+     * reads about the project — so this is written rather than stated. Falls
+     * back to `summary` when absent, so a new case study still renders.
+     */
+    blurb: z.string().optional(),
     role: z.string(),
     team: z.string().optional(),
     /** Ascending. Controls home-page and /work ordering. */
