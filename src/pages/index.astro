@@ -42,22 +42,28 @@ const skillItems = skills.flatMap((g) => g.items);
     }
   </script>
 
-  <!-- S1 — landing -->
-  <section id="landing" class="screen landing">
+  <!--
+    S1 — landing. A dark card: layered paper strata behind, the wordmark
+    centred, halftone dot columns down both margins. `.dark-panel` is the same
+    class the achievements, about and outro sections already carry, so the
+    hero re-themes itself off the tokens rather than hard-coding a palette.
+
+    The visible name is the first name alone. At this size the surname would
+    force the type down a step to fit, and the full name is already in the
+    header wordmark, the page title and the outro.
+  -->
+  <section id="landing" class="screen landing dark-panel">
     <HeroCanvas />
+    <span class="landing-dots landing-dots-l" aria-hidden="true"></span>
+    <span class="landing-dots landing-dots-r" aria-hidden="true"></span>
     <div class="landing-inner shell">
       <div class="landing-hero">
-        <Reveal
-          as="h1"
-          class="landing-name"
-          lines={[person.name.split(' ')[0], person.name.split(' ').slice(1).join(' ')]}
-        />
-        <Reveal as="p" class="landing-statement" delay={0.12}>{person.statement}</Reveal>
+        <Reveal as="h1" class="landing-name" lines={[person.name.split(' ')[0]]} />
+        <span class="sr-only">{person.name} — {person.statement}</span>
       </div>
       <div class="landing-meta">
         <span class="meta">{person.location}</span>
         <span class="meta" id="local-time" data-tz="Asia/Kolkata" aria-live="off"></span>
-        <span class="meta landing-scroll" id="scroll-cue">scroll ↓</span>
       </div>
     </div>
   </section>
@@ -271,14 +277,6 @@ const skillItems = skills.flatMap((g) => g.items);
       .querySelectorAll<HTMLElement>('#local-time, #outro-time')
       .forEach(liveClock);
 
-    const cue = document.getElementById('scroll-cue');
-    if (cue) {
-      window.addEventListener('scroll', () => cue.classList.add('is-hidden'), {
-        once: true,
-        passive: true,
-      });
-    }
-
     const emailLink = document.getElementById('outro-email');
     if (emailLink && navigator.clipboard) {
       emailLink.addEventListener('click', (e) => {
@@ -320,9 +318,44 @@ const skillItems = skills.flatMap((g) => g.items);
     overflow: hidden;
   }
 
+  /* Halftone columns down both margins. A single repeating radial dot, masked
+     to fade out at the head and foot so the strip has no cut ends. Sized off
+     the gutter so they sit in the page margin at every width rather than
+     crowding the type. */
+  .landing-dots {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: clamp(1.5rem, calc(var(--gutter) * 0.62), 3.25rem);
+    background-image: radial-gradient(
+      circle at center,
+      rgba(242, 241, 237, 0.2) 0.85px,
+      transparent 1.3px
+    );
+    background-size: 0.5rem 0.5rem;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 14%,
+      #000 86%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .landing-dots-l {
+    left: clamp(0.5rem, calc(var(--gutter) * 0.28), 1.5rem);
+  }
+
+  .landing-dots-r {
+    right: clamp(0.5rem, calc(var(--gutter) * 0.28), 1.5rem);
+  }
+
   .landing-inner {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     width: 100%;
     display: grid;
     grid-template-rows: 1fr auto;
@@ -331,6 +364,7 @@ const skillItems = skills.flatMap((g) => g.items);
 
   .landing-hero {
     align-self: center;
+    text-align: center;
   }
 
   /* :global — these classes land on <Reveal>'s own root element, which
@@ -339,19 +373,28 @@ const skillItems = skills.flatMap((g) => g.items);
      else below that styles a class passed into <Reveal>. */
   .landing-hero :global(.landing-name) {
     font-family: var(--font-compress);
-    font-size: var(--text-display);
+    /* Sized off the viewport rather than --text-display: this is a wordmark
+       set to span the card, and the tracking below is part of the measurement
+       — seven letters at 0.06em each is nearly half a character of extra
+       width, which the shared display step knows nothing about. */
+    font-size: clamp(3rem, 14vw, 13rem);
     font-weight: 400;
     text-transform: uppercase;
-    line-height: 0.92;
-    letter-spacing: 0.01em;
-    margin: 0;
+    line-height: 0.9;
+    /* Tracked out, and the trailing space trimmed back off the right edge so
+       the word still reads optically centred. */
+    letter-spacing: 0.06em;
+    margin: 0 0 0 0.06em;
   }
 
-  .landing-hero :global(.landing-statement) {
-    margin: 1.25rem 0 0;
-    max-width: 34ch;
-    color: var(--color-muted);
-    font-size: clamp(1rem, 0.6vw + 0.85rem, 1.25rem);
+  /* A phone's gutter eats a far larger share of the card than a desktop's, so
+     the same vw step leaves the wordmark floating in the middle of it. Stepped
+     up here rather than made steeper in the clamp, which would have run the
+     desktop size past the margins. */
+  @media (max-width: 46rem) {
+    .landing-hero :global(.landing-name) {
+      font-size: 19vw;
+    }
   }
 
   .landing-meta {
@@ -360,14 +403,6 @@ const skillItems = skills.flatMap((g) => g.items);
     gap: 0.75rem 2rem;
     align-items: center;
     justify-content: space-between;
-  }
-
-  .landing-scroll {
-    transition: opacity 500ms ease;
-  }
-
-  .landing-scroll.is-hidden {
-    opacity: 0;
   }
 
   /* ── shared section heading ─────────────────────────────────── */
