@@ -397,11 +397,11 @@ function sheetsFor(pages: NotebookLeaf[]) {
   /* Outer corners round, spine corners square — paper is only cut on the
      outside edge. Left board rounds left, right board rounds right. */
   .nb-board-left {
-    border-radius: 0.95rem 0 0 0.95rem;
+    border-radius: 1.5rem 0 0 1.5rem;
   }
 
   .nb-board-right {
-    border-radius: 0 0.95rem 0.95rem 0;
+    border-radius: 0 1.5rem 1.5rem 0;
   }
 
   .nb-board-mark {
@@ -450,6 +450,19 @@ function sheetsFor(pages: NotebookLeaf[]) {
      and the swing arrives in lurches. The easing is baked into the angles
      instead — they follow -178·sin²(πp/2), one continuous curve — and the
      clock that walks them stays even. */
+  /* A sheet in motion is above every other sheet, in both directions. Going
+     forward that was already true by accident — the turned z values are the
+     high ones. Going back it was not: the sheet dropped to its unturned
+     z-index the moment the class came off, which put it *under* the sheets
+     still lying on the left pile, so the whole first half of the swing played
+     out invisibly and the page seemed to appear from nowhere at the end.
+     Physically it is the top sheet of the left pile travelling to the top of
+     the right one, so it is never under anything. */
+  .nb-sheet.is-turning-fwd,
+  .nb-sheet.is-turning-back {
+    z-index: calc(var(--sheets) * 2 + 5);
+  }
+
   .nb-sheet.is-turning-fwd {
     animation: nb-turn-fwd var(--turn) linear both;
   }
@@ -497,7 +510,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     /* Both faces round their local right edge. The back is mirrored by its own
        rotation, so that edge lands on screen-left — the outer edge of the
        left-hand page. One rule, correct on both sides. */
-    border-radius: 0 0.95rem 0.95rem 0;
+    border-radius: 0 1.5rem 1.5rem 0;
     box-shadow:
       0 1px 2px rgba(var(--paper-shade), 0.06),
       0 10px 28px rgba(var(--paper-shade), 0.07);
