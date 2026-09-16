@@ -39,6 +39,30 @@ const work = defineCollection({
      * back to `summary` when absent, so a new case study still renders.
      */
     blurb: z.string().optional(),
+
+    /**
+     * How this project's case study page identifies itself.
+     *
+     * One spine, per-project variables — not a bespoke page. Everything here
+     * is optional, so a case study without a signature renders exactly as it
+     * did before: the shared accent, no field behind the header.
+     *
+     * Adding a motif is two edits: a value in the enum here and a branch in
+     * SignatureField.astro. The enum deliberately lists only what that
+     * component actually draws, so a typo in frontmatter fails the build
+     * rather than rendering nothing.
+     */
+    signature: z
+      .object({
+        /** Overrides --color-accent for this page only. Hex, matching the tokens. */
+        accent: z
+          .string()
+          .regex(/^#[0-9a-f]{6}$/i, 'accent must be a six-digit hex colour')
+          .optional(),
+        /** The field drawn behind the header. */
+        motif: z.enum(['ledger']).optional(),
+      })
+      .optional(),
     role: z.string(),
     team: z.string().optional(),
     /** Ascending. Controls home-page and /work ordering. */
