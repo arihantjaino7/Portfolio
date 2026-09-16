@@ -240,10 +240,16 @@ function sheetsFor(pages: NotebookLeaf[]) {
      physical book reads as physical because you can see the surface it is
      lying on and the shadow it drops onto it, which a black void cannot give. */
   .nb {
-    --turn: 1000ms;
+    --turn: 700ms;
     /* Warm, not neutral: paper shadows carry the colour of the paper. A grey
        shadow under cream stock is the single thing that reads as "rendered". */
     --paper-shade: 58, 48, 34;
+    /* --color-ground nudged a few points down and warmer. The separation
+       between the sheet and the surface under it is now carried by value —
+       this stock against a deeper backdrop — which is why the shadows below
+       can be as light as they are. Shadow is the expensive way to say
+       "this object is in front"; contrast is the free one. */
+    --paper: #efece4;
     width: min(84rem, 100vw - 2rem);
     max-width: none;
     height: min(46rem, 100svh - 2rem);
@@ -259,8 +265,10 @@ function sheetsFor(pages: NotebookLeaf[]) {
     overflow: visible;
   }
 
+  /* Deeper than the paper by about 30 points of luminance. That gap is what
+     lifts the book off the surface; the shadows only soften the edge. */
   .nb::backdrop {
-    background: rgba(230, 228, 221, 0.9);
+    background: rgba(211, 206, 195, 0.95);
     backdrop-filter: blur(7px) saturate(1.05);
   }
 
@@ -350,17 +358,17 @@ function sheetsFor(pages: NotebookLeaf[]) {
     position: absolute;
     left: 2%;
     right: 2%;
-    bottom: -1.5rem;
-    height: 2.5rem;
+    bottom: -0.9rem;
+    height: 1.5rem;
     z-index: -1;
     pointer-events: none;
     background: radial-gradient(
-      60% 100% at 50% 0%,
-      rgba(var(--paper-shade), 0.34),
-      rgba(var(--paper-shade), 0.12) 55%,
+      55% 100% at 50% 0%,
+      rgba(var(--paper-shade), 0.12),
+      rgba(var(--paper-shade), 0.04) 55%,
       transparent 78%
     );
-    filter: blur(7px);
+    filter: blur(6px);
   }
 
   /* ── paper ───────────────────────────────────────────────────── */
@@ -368,20 +376,20 @@ function sheetsFor(pages: NotebookLeaf[]) {
      sheet lying on it cannot be told apart by their stock. */
   .nb-board,
   .nb-face {
-    background-color: var(--color-ground);
+    background-color: var(--paper);
     background-image:
       /* grain — an feTurbulence tile at 3%, which is what stops a flat fill
          reading as a screen. No file: it is a few hundred bytes inline. */
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
       /* the sheet lifting very slightly away from the spine */
-      radial-gradient(130% 100% at 100% 50%, rgba(255, 255, 255, 0.5), transparent 62%);
+      radial-gradient(130% 100% at 100% 50%, rgba(255, 255, 255, 0.3), transparent 62%);
     background-size: 120px 120px, auto;
   }
 
   .nb-board {
     display: grid;
     place-items: center;
-    box-shadow: inset 0 0 70px rgba(var(--paper-shade), 0.14);
+    box-shadow: inset 0 0 70px rgba(var(--paper-shade), 0.05);
   }
 
   /* Outer corners round, spine corners square — paper is only cut on the
@@ -395,8 +403,9 @@ function sheetsFor(pages: NotebookLeaf[]) {
   }
 
   .nb-board-mark {
+    font-size: 1.0625rem;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.16em;
   }
 
   .nb-stack-col {
@@ -488,8 +497,8 @@ function sheetsFor(pages: NotebookLeaf[]) {
        left-hand page. One rule, correct on both sides. */
     border-radius: 0 0.55rem 0.55rem 0;
     box-shadow:
-      0 1px 2px rgba(var(--paper-shade), 0.14),
-      0 14px 34px rgba(var(--paper-shade), 0.16);
+      0 1px 1px rgba(var(--paper-shade), 0.05),
+      0 5px 14px rgba(var(--paper-shade), 0.06);
   }
 
   .nb-back {
@@ -503,14 +512,14 @@ function sheetsFor(pages: NotebookLeaf[]) {
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
-    width: clamp(2.5rem, 7%, 5.5rem);
+    width: clamp(2rem, 5.5%, 4rem);
     z-index: 2;
     pointer-events: none;
     background: linear-gradient(
       to right,
-      rgba(var(--paper-shade), 0.26),
-      rgba(var(--paper-shade), 0.13) 26%,
-      rgba(var(--paper-shade), 0.04) 60%,
+      rgba(var(--paper-shade), 0.10),
+      rgba(var(--paper-shade), 0.05) 26%,
+      rgba(var(--paper-shade), 0.015) 60%,
       transparent
     );
   }
@@ -522,7 +531,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     top: 0;
     bottom: 0;
     left: 50%;
-    width: clamp(3rem, 8vw, 7rem);
+    width: clamp(2.25rem, 6vw, 5rem);
     transform: translateX(-50%);
     z-index: 15;
     pointer-events: none;
@@ -530,10 +539,10 @@ function sheetsFor(pages: NotebookLeaf[]) {
       linear-gradient(
         to right,
         transparent,
-        rgba(var(--paper-shade), 0.06) 32%,
-        rgba(var(--paper-shade), 0.16) 47%,
-        rgba(var(--paper-shade), 0.16) 53%,
-        rgba(var(--paper-shade), 0.06) 68%,
+        rgba(var(--paper-shade), 0.02) 32%,
+        rgba(var(--paper-shade), 0.07) 47%,
+        rgba(var(--paper-shade), 0.07) 53%,
+        rgba(var(--paper-shade), 0.02) 68%,
         transparent
       );
   }
@@ -549,8 +558,8 @@ function sheetsFor(pages: NotebookLeaf[]) {
     opacity: 0;
     background: linear-gradient(
       100deg,
-      rgba(var(--paper-shade), 0.55),
-      rgba(var(--paper-shade), 0.14) 45%,
+      rgba(var(--paper-shade), 0.26),
+      rgba(var(--paper-shade), 0.07) 45%,
       transparent 70%
     );
   }
@@ -568,9 +577,9 @@ function sheetsFor(pages: NotebookLeaf[]) {
     background: linear-gradient(
       102deg,
       transparent 26%,
-      rgba(255, 255, 255, 0.34) 41%,
-      rgba(255, 255, 255, 0.78) 48%,
-      rgba(255, 255, 255, 0.34) 55%,
+      rgba(255, 255, 255, 0.18) 41%,
+      rgba(255, 255, 255, 0.44) 48%,
+      rgba(255, 255, 255, 0.18) 55%,
       transparent 70%
     );
   }
@@ -727,7 +736,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     background: var(--color-ground);
     border-radius: 0.3rem;
     padding: clamp(1.5rem, 4vw, 2.5rem);
-    box-shadow: 0 30px 80px rgba(var(--paper-shade), 0.45);
+    box-shadow: 0 18px 44px rgba(var(--paper-shade), 0.18);
   }
 
   .nb-card-title {
@@ -863,7 +872,7 @@ function sheetsFor(pages: NotebookLeaf[]) {
     if (!books.length || typeof HTMLDialogElement === 'undefined') return;
 
     /** Matches --turn in the stylesheet; the shading and gloss share it. */
-    const TURN_MS = 1000;
+    const TURN_MS = 700;
     const narrow = window.matchMedia('(max-width: 46rem)');
 
     books.forEach((dlg) => {
