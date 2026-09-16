@@ -14,6 +14,7 @@ const coursework = [
 ---
 
 <Base
+  theme="dark"
   title="About"
   description={`${person.name} — CS undergraduate at ${person.school}, building multi-agent AI systems, security tooling and full-stack products.`}
   ogImage={assets.og('about')}
@@ -34,7 +35,7 @@ const coursework = [
       </div>
 
       <div class="rail-body">
-        <h1 class="title">About</h1>
+        <h1 class="title page-title">About</h1>
 
         <div class="prose bio">
           <p>
@@ -98,7 +99,7 @@ const coursework = [
     .portrait { max-width: none; margin-bottom: 0; }
   }
 
-  .title { font-size: var(--text-chapter); margin-bottom: 2rem; }
+  .title { margin-bottom: 2rem; }
   .bio { font-size: 1.0625rem; }
   .bio em { font-style: normal; font-weight: 600; }
 

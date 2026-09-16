@@ -10,12 +10,13 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
 ---
 
 <Base
+  theme="dark"
   title="Work"
   description="Case studies: ARC, a fairness-first competition platform with database-layer anti-cheat, and SentinelsAI, a passive security scanner with a deterministic auto-fix pipeline."
   ogImage={assets.og('work')}
 >
   <div class="shell page">
-    <h1 class="title">Work</h1>
+    <h1 class="title page-title">Work</h1>
     <p class="meta count">{projects.length} case {projects.length === 1 ? 'study' : 'studies'}</p>
 
     <ol class="list">
@@ -40,7 +41,7 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
 
 <style>
   .page { padding-block: clamp(3.5rem, 12vh, 7rem); }
-  .title { font-size: var(--text-chapter); margin-bottom: 0.75rem; }
+  .title { margin-bottom: 0.75rem; }
   .count { margin: 0 0 clamp(2.5rem, 6vh, 4rem); }
 
   .list { list-style: none; padding: 0; margin: 0; }
@@ -57,7 +58,17 @@ const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
   }
 
   .idx { padding-top: 0.55rem; }
-  .name { font-size: var(--text-project); font-weight: 500; margin: 0 0 0.75rem; }
+  /* Same condensed face as the project rows on the home page — this list is
+     the same content in a plainer frame, so it should not speak differently. */
+  .name {
+    font-family: var(--font-compress);
+    font-size: var(--text-project);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1.02;
+    margin: 0 0 0.75rem;
+  }
   .summary { margin: 0 0 0.75rem; font-size: 1rem; }
   .stack { margin: 0; }
   .year { grid-column: 2; padding-top: 0.55rem; }

@@ -24,17 +24,6 @@
   --color-rule: rgba(20, 21, 26, 0.14);
   --color-accent: #b8734d;
 
-  /* Back-compat aliases. Chapter.astro, ProjectRow.astro, ProofFigure.astro,
-     ProofArtifact.astro, ArchDiagram.astro, about.astro and the work pages
-     still read the old six-value names directly — they're retired across
-     Phases 2-6, not rewritten here. REDESIGN.md Phase 8 finishes moving
-     every caller onto the names above and drops these. */
-  --color-paper: var(--color-ground);
-  --color-paper-deep: var(--color-ground-deep);
-  --color-ink: var(--color-text);
-  --color-ink-soft: var(--color-muted);
-  --color-mark: var(--color-accent);
-
   --font-sans: "Manrope Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo,
@@ -77,6 +66,17 @@
    palette, scoped locally rather than globally. Everything inside already
    reads var(--color-*), so wrapping a section in this class re-themes it
    with no per-component changes. */
+/* A whole route in the dark palette, rather than a section of one. Declared
+   on <html> by Base's `theme` prop, so body, main, the footer and every
+   component inside them follow from the same five values — a case study page
+   is dark because the rest of the site is, and it carries no colour of its
+   own to drift out of step.
+
+   This is also why the alias family that used to sit in @theme had to go:
+   @theme baked `--color-ink: var(--color-text)` to a static light value at
+   build time, so anything still reading an alias would have stayed light on
+   a dark page. Every caller now reads a live token. */
+html[data-theme='dark'],
 .dark-panel {
   --color-ground: #0b0c0e;
   --color-ground-deep: #16181c;
@@ -133,18 +133,18 @@ a.u {
 }
 a.u:hover,
 a.u:focus-visible {
-  background-image: linear-gradient(var(--color-mark), var(--color-mark));
+  background-image: linear-gradient(var(--color-accent), var(--color-accent));
   background-size: 100% 2px;
-  color: var(--color-mark);
+  color: var(--color-accent);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-mark);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: 1px;
 }
 
-::selection { background: var(--color-mark); color: var(--color-paper); }
+::selection { background: var(--color-accent); color: var(--color-ground); }
 
 img, video, svg { max-width: 100%; height: auto; display: block; }
 
@@ -182,6 +182,20 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
 
 .measure { max-width: var(--measure); }
 
+/* The site's display voice, for the <h1> of a route. The landing wordmark,
+   the section heads and the project rows are all set in the condensed face —
+   a page title in the body sans was the one heading still speaking with a
+   different accent. Sized here rather than per page so the three routes that
+   use it cannot drift apart. */
+.page-title {
+  font-family: var(--font-compress);
+  font-size: clamp(2.25rem, 6vw, 4.25rem);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.92;
+}
+
 .meta {
   font-family: var(--font-mono);
   font-size: var(--text-meta);
@@ -203,8 +217,8 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
   position: absolute;
   left: -9999px;
   top: 0;
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--color-text);
+  color: var(--color-ground);
   padding: 0.75rem 1rem;
   z-index: 50;
   font-family: var(--font-mono);
@@ -219,7 +233,7 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
 .prose code {
   font-family: var(--font-mono);
   font-size: 0.9em;
-  background: var(--color-paper-deep);
+  background: var(--color-ground-deep);
   padding: 0.1em 0.35em;
 }
 .prose ul { padding-left: 1.1rem; list-style: none; }
@@ -228,10 +242,10 @@ hr { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
   content: "—";
   position: absolute;
   left: -1.1rem;
-  color: var(--color-ink-soft);
+  color: var(--color-muted);
 }
 .prose a { text-decoration: underline; text-underline-offset: 3px; }
-.prose a:hover { color: var(--color-mark); }
+.prose a:hover { color: var(--color-accent); }
 
 /* ─────────────────────────────────────────────────────────────
    Motion engine — REDESIGN.md §1, Phase 1.
