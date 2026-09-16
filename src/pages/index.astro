@@ -594,6 +594,20 @@ const skillItems = skills.flatMap((g) => g.items);
      on the centred grid the rest of the page uses. */
   .work-section {
     --work-pad: clamp(0.75rem, 1.4vw, 1.5rem);
+    /* Grey rather than the flat near-black .dark-panel hands it, lit the same
+       way the landing card is: a soft lift through the middle, falling back to
+       --color-ground at both ends. Ending on the plain ground is what makes
+       the seams with the achievements section above and the about section
+       below disappear — the grey reads as this section catching the light,
+       not as a differently coloured panel butted against two others. */
+    background:
+      radial-gradient(85% 58% at 50% 42%, rgba(242, 241, 237, 0.05), transparent 72%),
+      linear-gradient(
+        180deg,
+        var(--color-ground) 0%,
+        var(--color-ground-deep) 52%,
+        var(--color-ground) 100%
+      );
     /* A full viewport, not 100svh minus the header: the header hides as soon as
        you scroll down, so subtracting its height here only guaranteed a strip of
        the next section showing at the bottom. Nothing is lost underneath the
@@ -696,7 +710,13 @@ const skillItems = skills.flatMap((g) => g.items);
     position: absolute;
     inset: -1px -12%;
     z-index: -1;
-    background: var(--color-text);
+    /* A veil of the text colour rather than the text colour itself. Filling
+       solid inverted the row to full cream, which on a grey section read as a
+       hole punched in the page rather than as a row lifting off it. At a
+       tenth it lands a couple of steps above the ground — enough that the
+       skewed leading edge is unmistakable, not so much that the row stops
+       belonging to the section. */
+    background: color-mix(in srgb, var(--color-text) 10%, transparent);
     /* Just past its own width — enough to sit fully off the left edge, and no
        further. Over-travelling spends the first third of the duration moving
        through nothing, which reads as lag before the slab appears. */
@@ -771,7 +791,12 @@ const skillItems = skills.flatMap((g) => g.items);
     position: absolute;
     inset: 0;
     transform: translateY(100%);
-    color: var(--color-ground);
+    /* The light copy used to be the ground colour, which only worked because
+       the slab behind it was solid cream. Against a grey slab it would be
+       invisible, so the roll lands on the accent instead — the glyphs still
+       change as they turn over, in the one colour the rest of the site
+       already uses to mark something. */
+    color: var(--color-accent);
   }
 
   /* global.css zeroes transition *duration* under reduced motion but not
@@ -848,7 +873,7 @@ const skillItems = skills.flatMap((g) => g.items);
     .proj-link:focus-visible .proj-meta,
     .proj-link:hover .proj-icon,
     .proj-link:focus-visible .proj-icon {
-      color: var(--color-ground);
+      color: var(--color-text);
     }
 
     .proj-link:hover .proj-icon,
@@ -863,11 +888,8 @@ const skillItems = skills.flatMap((g) => g.items);
       padding: 0.45rem 0.85rem;
       opacity: 1;
       transform: translateY(0);
-      color: var(--color-ground);
-      /* The one value in this row that was written as a literal light cream.
-         Derived from the token instead, so it follows the slab rather than
-         assuming the slab is dark. */
-      border-color: color-mix(in srgb, var(--color-ground) 35%, transparent);
+      color: var(--color-text);
+      border-color: color-mix(in srgb, var(--color-text) 26%, transparent);
     }
   }
 
