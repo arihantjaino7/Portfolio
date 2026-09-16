@@ -10,13 +10,7 @@ const isHome = path.replace(/\/$/, '') === base;
 const items = [...nav, { href: links.email, label: 'email' }];
 ---
 
-<!--
-  `header-over-hero` is rendered on rather than added by script: the homepage
-  opens with the bar already sitting on top of the dark landing card, and
-  adding the class on first tick would flash a cream strip across the top of
-  it. The script below only ever takes it away, once the hero is behind you.
--->
-<header class:list={['site-header', isHome && 'header-over-hero']}>
+<header class="site-header">
   <div class="shell header-inner">
     {
       isHome ? (
@@ -85,10 +79,6 @@ const items = [...nav, { href: links.email, label: 'email' }];
   (function () {
     var header = document.querySelector('.site-header');
     if (!header) return;
-    // Reduced motion suppresses the hide-on-scroll only. The dark-over-hero
-    // flip below is not motion — it is which palette the bar is painted in,
-    // and skipping it would strand the homepage header black all the way
-    // down the page.
     var allowHide = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // Absolute document position of the hero's own bottom edge, measured
@@ -114,7 +104,6 @@ const items = [...nav, { href: links.email, label: 'email' }];
 
     var lastY = window.scrollY;
     var hidden = false;
-    var overHero = header.classList.contains('header-over-hero');
     // Scroll noise (trackpad micro-deltas, rubber-banding) shouldn't flip the
     // header on every tick — only a deliberate few px of travel should.
     var THRESHOLD = 6;
@@ -141,17 +130,6 @@ const items = [...nav, { href: links.email, label: 'email' }];
         header.classList.toggle('header-hidden', hidden);
       }
 
-      // Dark while the bar is over the landing card, light everywhere else.
-      // Same heroBottom the pin above reads, so the two can never disagree
-      // about where the hero ends. On a route with no #landing heroBottom is
-      // 0 and this is false from the first tick, which is correct — those
-      // pages never carry the class in the first place.
-      var over = y <= heroBottom;
-      if (over !== overHero) {
-        overHero = over;
-        header.classList.toggle('header-over-hero', over);
-      }
-
       lastY = y;
     }
 
@@ -171,36 +149,35 @@ const items = [...nav, { href: links.email, label: 'email' }];
 <style>
   /* Every colour here reads a live token (--color-text / --color-ground /
      --color-rule) rather than the --color-ink family: Tailwind's @theme bakes
-     those aliases to a static value, so they would not follow a .dark-panel
-     override if the header ever sits over one. */
+     those aliases to a static value, so they would not follow an override. */
   /* Pinned so scroll snapping can't carry it off-screen: a snapped section's
      top lands flush with the viewport top, and the header sits above that
      section in normal flow, so without this it scrolls fully out of view the
-     instant any snap fires — including on load. The header sits outside every
-     .dark-panel wrapper, so var(--color-ground) here resolves to the light
-     value unless the bar declares otherwise itself — which is exactly what
-     .header-over-hero below does. */
-  .site-header {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--color-ground);
-    border-bottom: 1px solid var(--color-rule);
-    transition: transform 320ms ease;
-  }
+     instant any snap fires — including on load.
 
-  /* Over the landing card the bar joins it: the same five tokens .dark-panel
-     redeclares, scoped to the header, so the wordmark, the pills and their
-     hover fill all invert with no per-element rules. The rule under it goes
-     too — a hairline across a continuous black field only marks the seam. */
-  .site-header.header-over-hero {
+     Dark on every route and at every scroll position. The bar declares the
+     same five tokens .dark-panel does, scoped to itself, so the wordmark, the
+     pills and their expanding hover fill all invert off the tokens with no
+     per-element rules — the pill fills cream and its label goes black. It
+     sits outside every .dark-panel wrapper, so without these declarations it
+     would resolve to the light palette regardless of what it is floating
+     over. */
+  .site-header {
     --color-ground: #0b0c0e;
     --color-ground-deep: #16181c;
     --color-text: #f2f1ed;
     --color-muted: rgba(242, 241, 237, 0.62);
     --color-rule: rgba(242, 241, 237, 0.14);
     color-scheme: dark;
-    border-bottom-color: transparent;
+
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--color-ground);
+    /* No rule: over a dark section it only marks a seam in a continuous
+       field, and over a light one the bar's own edge is already the line. */
+    border-bottom: 1px solid transparent;
+    transition: transform 320ms ease;
   }
 
   /* Slid up by its own height rather than the viewport's: translateY(-100%)

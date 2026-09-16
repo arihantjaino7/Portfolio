@@ -255,6 +255,20 @@ function sheetsFor(pages: NotebookLeaf[]) {
      physical book reads as physical because you can see the surface it is
      lying on and the shadow it drops onto it, which a black void cannot give. */
   .nb {
+    /* The light palette, redeclared locally. The notebook is a paper object
+       and its stock is a fixed cream, so it cannot inherit tokens from the
+       section that happens to host it — the work section is a .dark-panel,
+       and inheriting from it would put cream type on cream paper. A modal
+       <dialog> renders in the top layer but still inherits its CSS down the
+       DOM, so this has to be declared, not assumed. */
+    --color-ground: #f2f1ed;
+    --color-ground-deep: #e6e4dd;
+    --color-text: #14151a;
+    --color-muted: rgba(20, 21, 26, 0.62);
+    --color-rule: rgba(20, 21, 26, 0.14);
+    --color-accent: #b8734d;
+    color-scheme: light;
+
     --turn: 560ms;
     /* Warm, not neutral: paper shadows carry the colour of the paper. A grey
        shadow under cream stock is the single thing that reads as "rendered". */
