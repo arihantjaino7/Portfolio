@@ -110,7 +110,13 @@ const skillItems = skills.flatMap((g) => g.items);
   </section>
 
   <!-- S3 — work -->
-  <section id="work" class="work-section">
+  <!--
+    Dark like the sections either side of it. Nothing in the rows needed
+    touching: the slab is var(--color-text) and the text that lands on it is
+    var(--color-ground), so .dark-panel swaps which of the two is the ink and
+    which is the paper and the hover inverts itself.
+  -->
+  <section id="work" class="dark-panel work-section">
     <div class="work-inner">
       <div class="work-head">
         <Reveal as="h2" class="work-title" lines={['Projects']} />
@@ -858,7 +864,10 @@ const skillItems = skills.flatMap((g) => g.items);
       opacity: 1;
       transform: translateY(0);
       color: var(--color-ground);
-      border-color: rgba(242, 241, 237, 0.35);
+      /* The one value in this row that was written as a literal light cream.
+         Derived from the token instead, so it follows the slab rather than
+         assuming the slab is dark. */
+      border-color: color-mix(in srgb, var(--color-ground) 35%, transparent);
     }
   }
 
