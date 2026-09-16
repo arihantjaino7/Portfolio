@@ -10,7 +10,13 @@ const isHome = path.replace(/\/$/, '') === base;
 const items = [...nav, { href: links.email, label: 'email' }];
 ---
 
-<header class="site-header">
+<!--
+  `header-over-hero` is rendered on rather than added by script: the homepage
+  opens with the bar already sitting on top of the dark landing card, and
+  adding the class on first tick would flash a cream strip across the top of
+  it. The script below only ever takes it away, once the hero is behind you.
+-->
+<header class:list={['site-header', isHome && 'header-over-hero']}>
   <div class="shell header-inner">
     {
       isHome ? (
@@ -77,9 +83,13 @@ const items = [...nav, { href: links.email, label: 'email' }];
 -->
 <script is:inline>
   (function () {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var header = document.querySelector('.site-header');
     if (!header) return;
+    // Reduced motion suppresses the hide-on-scroll only. The dark-over-hero
+    // flip below is not motion — it is which palette the bar is painted in,
+    // and skipping it would strand the homepage header black all the way
+    // down the page.
+    var allowHide = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // Absolute document position of the hero's own bottom edge, measured
     // once and cached: comparing it to scrollY every tick is what lets
@@ -104,6 +114,7 @@ const items = [...nav, { href: links.email, label: 'email' }];
 
     var lastY = window.scrollY;
     var hidden = false;
+    var overHero = header.classList.contains('header-over-hero');
     // Scroll noise (trackpad micro-deltas, rubber-banding) shouldn't flip the
     // header on every tick — only a deliberate few px of travel should.
     var THRESHOLD = 6;
@@ -115,7 +126,9 @@ const items = [...nav, { href: links.email, label: 'email' }];
       var delta = y - lastY;
 
       var shouldHide = hidden;
-      if (y <= heroBottom) {
+      if (!allowHide) {
+        shouldHide = false;
+      } else if (y <= heroBottom) {
         shouldHide = false;
       } else if (delta > THRESHOLD) {
         shouldHide = true;
@@ -127,6 +140,18 @@ const items = [...nav, { href: links.email, label: 'email' }];
         hidden = shouldHide;
         header.classList.toggle('header-hidden', hidden);
       }
+
+      // Dark while the bar is over the landing card, light everywhere else.
+      // Same heroBottom the pin above reads, so the two can never disagree
+      // about where the hero ends. On a route with no #landing heroBottom is
+      // 0 and this is false from the first tick, which is correct — those
+      // pages never carry the class in the first place.
+      var over = y <= heroBottom;
+      if (over !== overHero) {
+        overHero = over;
+        header.classList.toggle('header-over-hero', over);
+      }
+
       lastY = y;
     }
 
@@ -151,11 +176,10 @@ const items = [...nav, { href: links.email, label: 'email' }];
   /* Pinned so scroll snapping can't carry it off-screen: a snapped section's
      top lands flush with the viewport top, and the header sits above that
      section in normal flow, so without this it scrolls fully out of view the
-     instant any snap fires — including on load. --color-ground is read here
-     unconditionally rather than the section-local var(--color-ground): the
-     header sits outside every .dark-panel wrapper, so this always resolves to
-     the light value regardless of what it is currently floating over, and
-     needs to paint over that content rather than pick up its theme. */
+     instant any snap fires — including on load. The header sits outside every
+     .dark-panel wrapper, so var(--color-ground) here resolves to the light
+     value unless the bar declares otherwise itself — which is exactly what
+     .header-over-hero below does. */
   .site-header {
     position: sticky;
     top: 0;
@@ -163,6 +187,20 @@ const items = [...nav, { href: links.email, label: 'email' }];
     background: var(--color-ground);
     border-bottom: 1px solid var(--color-rule);
     transition: transform 320ms ease;
+  }
+
+  /* Over the landing card the bar joins it: the same five tokens .dark-panel
+     redeclares, scoped to the header, so the wordmark, the pills and their
+     hover fill all invert with no per-element rules. The rule under it goes
+     too — a hairline across a continuous black field only marks the seam. */
+  .site-header.header-over-hero {
+    --color-ground: #0b0c0e;
+    --color-ground-deep: #16181c;
+    --color-text: #f2f1ed;
+    --color-muted: rgba(242, 241, 237, 0.62);
+    --color-rule: rgba(242, 241, 237, 0.14);
+    color-scheme: dark;
+    border-bottom-color: transparent;
   }
 
   /* Slid up by its own height rather than the viewport's: translateY(-100%)

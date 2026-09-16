@@ -1,25 +1,32 @@
 ---
 /**
- * S1 landing background — a slow field of layered wave bands that reacts to
- * the cursor.
+ * S1 landing background — layered paper strata.
  *
- * Canvas 2D rather than WebGL (REDESIGN.md §2 Phase 2's original shader) or a
- * library: the whole image is soft-focus, so it can be rendered at half
- * resolution and blurred by the compositor with `filter`, which costs less
- * than a shader and has no dependency. The blur is also what gives the bands
- * their satin edge — the paths themselves are plain filled sine curves.
+ * Solid, hard-edged bands stacked front-to-back like torn sheets of paper, not
+ * the blurred satin field this component used to paint. Each band is filled
+ * opaque and drawn over the one behind it, so the only thing you see of a
+ * lower layer is the sliver above the next crest — which is what makes it read
+ * as stacked stock rather than as overlapping washes. The tonal step between
+ * neighbouring sheets is deliberately about 2%: at rest the whole field is
+ * very nearly flat, and the layering only resolves if you look for it.
+ *
+ * Still by default. The bands hold one frame until the pointer enters the
+ * hero, then drift and lean toward the cursor; when it leaves they ease back
+ * to stillness and the rAF loop stops. Nothing moves on a touch device or
+ * under prefers-reduced-motion.
  *
  * Three states, in order of preference:
- *   1. JS + motion allowed  → animating, cursor-reactive.
+ *   1. JS + motion allowed  → still, waking on hover.
  *   2. prefers-reduced-motion → one static frame, no rAF, no pointer listeners.
- *   3. no JS / canvas fails → the CSS shapes underneath, which are what this
- *      component rendered before and never need the canvas to paint.
+ *   3. no JS / canvas fails → the CSS strata underneath, which approximate the
+ *      same silhouette and never need the canvas to paint.
  */
 ---
 
 <div class="hero-bg" aria-hidden="true">
   <div class="hero-fallback"></div>
   <canvas class="hero-canvas" data-hero-waves></canvas>
+  <div class="hero-glow"></div>
 </div>
 
 <script>
@@ -34,52 +41,64 @@
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
 
     const TAU = Math.PI * 2;
-    // Rendered below CSS resolution: the output is blurred, so the extra
-    // pixels would be thrown away by the filter anyway.
-    const SCALE = 0.6;
-    const STEP = 6; // px between curve samples, in canvas space
-    const REACH = 320; // px of cursor influence, in CSS space
-    const PULL = 0.5; // how far a band leans toward the cursor, 0..1
+    const STEP = 4; // px between curve samples, in device space
+    const REACH = 420; // px of cursor influence, in CSS space
+    const PULL = 0.32; // how far a band leans toward the cursor, 0..1
+    // Full device resolution, capped: these edges are crisp now, so the
+    // half-res the blurred build got away with would show as stair-stepping.
+    const MAX_DPR = 2;
 
-    /** #rrggbb -> "r, g, b", so canvas colours follow the design tokens. */
-    function rgbOf(token: string, fallback: string) {
-      const raw = getComputedStyle(document.documentElement)
-        .getPropertyValue(token)
-        .trim();
+    /** #rrggbb -> [r, g, b], so canvas colours follow the design tokens. */
+    function rgbOf(token: string, fallback: [number, number, number]) {
+      // Read off the host, not the document root: the hero sits inside a
+      // .dark-panel, which redeclares these tokens locally. The root still
+      // carries the light values.
+      const raw = getComputedStyle(host!).getPropertyValue(token).trim();
       const hex = /^#([0-9a-f]{6})$/i.exec(raw);
       if (!hex) return fallback;
       const n = parseInt(hex[1], 16);
-      return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as [number, number, number];
     }
 
-    const ground = rgbOf('--color-ground', '242, 241, 237');
-    const ink = rgbOf('--color-text', '20, 21, 26');
+    const ground = rgbOf('--color-ground', [11, 12, 14]);
+    const text = rgbOf('--color-text', [242, 241, 237]);
+
+    /** Ground lifted `f` of the way toward the text colour. */
+    function tone(f: number) {
+      const c = ground.map((g, i) => Math.round(g + (text[i] - g) * f));
+      return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+    }
 
     /**
-     * Each band is three summed sines at different rates, so the crest never
-     * repeats on a visible cycle. Speeds are in radians/second and deliberately
-     * tiny — the field should read as still until you watch it. `tilt` rakes a
-     * band across the frame so the forms sweep diagonally rather than sitting
-     * in horizontal stripes.
+     * One sheet per entry, ordered back (highest on screen) to front. Two
+     * summed sines at long wavelengths — a sheet of paper has one lazy bend in
+     * it, not a ripple. `lift` is how far this sheet's tone sits above the
+     * ground, and it climbs as the stack comes forward, so the field reads as
+     * very slightly brighter toward the bottom. `edge` is the hairline of
+     * light along the crest: the cut edge of the stock catching the room.
      */
     const bands = [
-      { base: 0.10, tilt: 0.20, a1: 0.075, a2: 0.032, a3: 0.016, f1: 1.1, f2: 2.3, f3: 3.7, s1: 0.055, s2: -0.038, s3: 0.071, p1: 0.0, p2: 1.9, p3: 4.1, alpha: 0.10, crest: 0.85 },
-      { base: 0.32, tilt: -0.16, a1: 0.085, a2: 0.038, a3: 0.019, f1: 0.9, f2: 1.9, f3: 3.1, s1: -0.047, s2: 0.062, s3: -0.033, p1: 2.2, p2: 0.4, p3: 5.0, alpha: 0.09, crest: 0.9 },
-      { base: 0.54, tilt: 0.24, a1: 0.09, a2: 0.042, a3: 0.02, f1: 1.3, f2: 2.1, f3: 3.4, s1: 0.041, s2: -0.057, s3: 0.029, p1: 4.4, p2: 2.7, p3: 1.2, alpha: 0.085, crest: 0.8 },
-      { base: 0.74, tilt: -0.2, a1: 0.075, a2: 0.034, a3: 0.017, f1: 1.0, f2: 2.5, f3: 3.9, s1: -0.036, s2: 0.049, s3: -0.064, p1: 1.1, p2: 5.3, p3: 3.3, alpha: 0.1, crest: 0.75 },
-      { base: 0.94, tilt: 0.14, a1: 0.06, a2: 0.028, a3: 0.014, f1: 1.4, f2: 2.0, f3: 3.2, s1: 0.06, s2: -0.031, s3: 0.044, p1: 3.6, p2: 1.5, p3: 0.7, alpha: 0.11, crest: 0.7 },
+      { base: 0.34, tilt: 0.10, a1: 0.030, a2: 0.013, f1: 0.7, f2: 1.6, s1: 0.041, s2: -0.029, p1: 0.0, p2: 1.9, lift: 0.020, edge: 0.030 },
+      { base: 0.50, tilt: -0.08, a1: 0.034, a2: 0.015, f1: 0.6, f2: 1.3, s1: -0.034, s2: 0.045, p1: 2.2, p2: 0.4, lift: 0.038, edge: 0.034 },
+      { base: 0.65, tilt: 0.12, a1: 0.030, a2: 0.012, f1: 0.8, f2: 1.5, s1: 0.029, s2: -0.038, p1: 4.4, p2: 2.7, lift: 0.056, edge: 0.030 },
+      { base: 0.79, tilt: -0.10, a1: 0.026, a2: 0.011, f1: 0.5, f2: 1.8, s1: -0.025, s2: 0.033, p1: 1.1, p2: 5.3, lift: 0.074, edge: 0.026 },
+      { base: 0.92, tilt: 0.07, a1: 0.022, a2: 0.009, f1: 0.9, f2: 1.2, s1: 0.037, s2: -0.021, p1: 3.6, p2: 1.5, lift: 0.092, edge: 0.022 },
     ];
 
     let w = 0;
     let h = 0;
-    // Pointer state in canvas space. `px`/`py` are the eased position the
+    let dpr = 1;
+    // Pointer state in device space. `px`/`py` are the eased position the
     // curves actually read, so the bulge trails the cursor instead of snapping.
     let px = 0;
     let py = 0;
     let targetX = 0;
     let targetY = 0;
-    let strength = 0; // 0 when the pointer is away, eases to 1 over the hero
-    let targetStrength = 0;
+    // 0 at rest, eases to 1 while the pointer is over the hero. It gates both
+    // the lean and the clock, so at rest the field is not slowly animating at
+    // low amplitude — it is genuinely still.
+    let energy = 0;
+    let targetEnergy = 0;
     let raf = 0;
     let last = 0;
     let t = 0;
@@ -94,8 +113,9 @@
 
     function resize() {
       measure();
-      w = Math.max(1, Math.ceil(rect.width * SCALE));
-      h = Math.max(1, Math.ceil(rect.height * SCALE));
+      dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
+      w = Math.max(1, Math.ceil(rect.width * dpr));
+      h = Math.max(1, Math.ceil(rect.height * dpr));
       canvas!.width = w;
       canvas!.height = h;
       draw();
@@ -107,63 +127,72 @@
         b.base * h +
         (k - 0.5) * b.tilt * h +
         Math.sin(k * b.f1 * TAU + t * b.s1 + b.p1) * b.a1 * h +
-        Math.sin(k * b.f2 * TAU + t * b.s2 + b.p2) * b.a2 * h +
-        Math.sin(k * b.f3 * TAU + t * b.s3 + b.p3) * b.a3 * h;
+        Math.sin(k * b.f2 * TAU + t * b.s2 + b.p2) * b.a2 * h;
 
-      if (strength > 0.001) {
+      if (energy > 0.001) {
         // A gaussian swell in x, faded by how near the pointer is in y, so a
-        // band only answers the cursor when the cursor is actually at its edge.
-        const reach = REACH * SCALE;
+        // sheet only answers the cursor when the cursor is actually at its
+        // edge — the rest of the stack stays put.
+        const reach = REACH * dpr;
         const dx = (x - px) / reach;
         const alongX = Math.exp(-dx * dx * 2);
         const alongY = Math.max(0, 1 - Math.abs(y - py) / reach);
-        y += (py - y) * PULL * alongX * alongY * strength;
+        y += (py - y) * PULL * alongX * alongY * energy;
       }
       return y;
     }
 
     function draw() {
       if (!w || !h) return;
-      ctx!.clearRect(0, 0, w, h);
-      ctx!.fillStyle = `rgb(${ground})`;
+      ctx!.fillStyle = tone(0);
       ctx!.fillRect(0, 0, w, h);
 
+      // Back to front. Every sheet is filled down to the bottom edge and the
+      // next one paints over it, so the stack occludes exactly the way a pile
+      // of paper does — no alpha, no compositing order to get wrong.
       for (const b of bands) {
         ctx!.beginPath();
         ctx!.moveTo(0, curveY(b, 0));
         for (let x = STEP; x <= w; x += STEP) ctx!.lineTo(x, curveY(b, x));
         ctx!.lineTo(w, curveY(b, w));
-
-        // Stroke the crest before closing the path into a fill, so the lit
-        // edge sits exactly on the curve. Wide, because the blur that follows
-        // would erase a hairline entirely.
-        ctx!.strokeStyle = `rgba(255, 255, 255, ${b.crest})`;
-        ctx!.lineWidth = 9;
-        ctx!.stroke();
-
         ctx!.lineTo(w, h);
         ctx!.lineTo(0, h);
         ctx!.closePath();
-        // Shading hugs the underside of the crest and fades out well before
-        // the bottom, so each band reads as a ribbon rather than a wash.
-        const g = ctx!.createLinearGradient(0, b.base * h - h * 0.04, 0, b.base * h + h * 0.34);
-        g.addColorStop(0, `rgba(${ink}, ${b.alpha})`);
-        g.addColorStop(1, `rgba(${ink}, 0)`);
-        ctx!.fillStyle = g;
+        ctx!.fillStyle = tone(b.lift);
         ctx!.fill();
+
+        // The cut edge, drawn after the fill so it sits on top of its own
+        // sheet rather than under the next one.
+        ctx!.beginPath();
+        ctx!.moveTo(0, curveY(b, 0));
+        for (let x = STEP; x <= w; x += STEP) ctx!.lineTo(x, curveY(b, x));
+        ctx!.strokeStyle = `rgba(${text[0]}, ${text[1]}, ${text[2]}, ${b.edge})`;
+        ctx!.lineWidth = dpr;
+        ctx!.stroke();
       }
     }
 
     function frame(now: number) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0);
       last = now;
-      t += dt;
+      // The clock only runs on the pointer's energy, so the field freezes
+      // where it settles instead of drifting on forever.
+      t += dt * energy;
 
-      strength += (targetStrength - strength) * Math.min(1, dt * 4);
+      energy += (targetEnergy - energy) * Math.min(1, dt * 3);
       px += (targetX - px) * Math.min(1, dt * 6);
       py += (targetY - py) * Math.min(1, dt * 6);
 
       draw();
+
+      // Settled: one last frame is already on screen, so stop burning rAF
+      // until the pointer comes back.
+      if (targetEnergy === 0 && energy < 0.002) {
+        energy = 0;
+        raf = 0;
+        draw();
+        return;
+      }
       raf = requestAnimationFrame(frame);
     }
 
@@ -182,17 +211,18 @@
     /**
      * Bound to the window, not to the host: the hero content layer sits above
      * .hero-bg and is not a descendant of it, so listening on the host would
-     * miss every pointer event that lands on the name, the statement or the
-     * meta row — which is most of the hero.
+     * miss every pointer event that lands on the wordmark or the meta row —
+     * which is most of the hero.
      */
     function onPointerMove(e: PointerEvent) {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
-      targetStrength = inside ? 1 : 0;
+      targetEnergy = inside ? 1 : 0;
       if (!inside) return;
-      targetX = x * SCALE;
-      targetY = y * SCALE;
+      targetX = x * dpr;
+      targetY = y * dpr;
+      start();
     }
 
     function bindPointer() {
@@ -204,29 +234,35 @@
     function unbindPointer() {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('scroll', measure);
-      targetStrength = 0;
-      strength = 0;
+      targetEnergy = 0;
+      energy = 0;
     }
 
     resize();
     window.addEventListener('resize', resize, { passive: true });
 
-    // Nothing to animate while the hero is off screen or the tab is hidden.
+    // Nothing to animate while the hero is off screen or the tab is hidden —
+    // and a pointer that left over the top edge should not leave the loop
+    // running behind the rest of the page.
     const io = new IntersectionObserver(
-      ([entry]) => (entry.isIntersecting ? start() : stop()),
+      ([entry]) => {
+        if (entry.isIntersecting) return;
+        targetEnergy = 0;
+        energy = 0;
+        stop();
+      },
       { threshold: 0 },
     );
     io.observe(host);
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) stop();
-      else start();
+      else if (energy > 0 || targetEnergy > 0) start();
     });
 
     bindPointer();
-    if (!reduce.matches) start();
 
-    // Flipping the OS setting mid-session settles the field back to a still
+    // Flipping the OS setting mid-session settles the field back to its still
     // frame rather than leaving it mid-swell.
     reduce.addEventListener('change', () => {
       if (reduce.matches) {
@@ -235,7 +271,6 @@
         draw();
       } else {
         bindPointer();
-        start();
       }
     });
   }
@@ -250,27 +285,40 @@
     background: var(--color-ground);
   }
 
-  /* Oversized and blurred: the blur is what turns flat sine fills into satin,
-     and the overhang keeps its soft edge outside the visible area. Sitting
-     above .hero-fallback, it hides those shapes the moment it paints — so the
-     fallback needs no class toggling to get out of the way. */
+  /* No blur, and no overhang to hide one: the whole point of the strata is
+     that every crest is a clean cut. */
   .hero-canvas {
     position: absolute;
-    top: -6%;
-    left: -6%;
-    width: 112%;
-    height: 112%;
-    filter: blur(min(1.8vw, 24px));
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 
-  /* Shown only if the canvas never paints (no JS, no 2D context). Same shapes
-     this component used before it animated. */
-  .hero-fallback {
+  /* Lifts the middle of the frame a few percent so the wordmark sits in light
+     and the corners fall away, the way the reference card does. Above the
+     canvas, so it reads across every sheet rather than only the ground. */
+  .hero-glow {
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(60% 45% at 12% 8%, rgba(20, 21, 26, 0.07), transparent 70%),
-      radial-gradient(55% 40% at 88% 30%, rgba(20, 21, 26, 0.06), transparent 72%),
-      radial-gradient(70% 45% at 40% 96%, rgba(20, 21, 26, 0.05), transparent 75%);
+      radial-gradient(62% 52% at 50% 40%, rgba(242, 241, 237, 0.055), transparent 72%),
+      radial-gradient(120% 90% at 50% 120%, rgba(0, 0, 0, 0.32), transparent 62%);
+  }
+
+  /* Shown only if the canvas never paints (no JS, no 2D context) — the same
+     silhouette in stacked linear gradients, hard stops so the strata still
+     read as cut sheets. */
+  .hero-fallback {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      var(--color-ground) 0 34%,
+      rgba(242, 241, 237, 0.02) 34% 50%,
+      rgba(242, 241, 237, 0.038) 50% 65%,
+      rgba(242, 241, 237, 0.056) 65% 79%,
+      rgba(242, 241, 237, 0.074) 79% 92%,
+      rgba(242, 241, 237, 0.092) 92% 100%
+    );
   }
 </style>
