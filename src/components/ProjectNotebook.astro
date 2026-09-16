@@ -1,0 +1,872 @@
+---
+/**
+ * Project notebook — the home page's reading layer.
+ *
+ * Clicking a work row opens the project as a stack of paper leaves you turn
+ * one at a time, rather than navigating to the long-form case study. One leaf
+ * per spine section, in the order the case study uses them.
+ *
+ * Progressive enhancement, top to bottom:
+ *   - The row stays a real <a href="/work/<slug>">. With JS off, a <dialog>
+ *     without [open] is display:none, the click is never intercepted, and the
+ *     reader gets the full page. Nothing here is the only route to anything.
+ *   - <dialog>.showModal() supplies the focus trap, the Esc handler, the inert
+ *     background and ::backdrop for free — none of that is hand-rolled.
+ *   - The turn is a rotateY around the leaf's left edge with shading swept
+ *     across it mid-turn. It is not a deforming curl (that needs geometry this
+ *     page has no business shipping); it is a hinge that reads as paper.
+ *   - Under prefers-reduced-motion the global rule in global.css collapses
+ *     every transition here, so leaves swap instantly and nothing is lost.
+ *
+ * Every leaf is rendered server-side, so the whole notebook is in the HTML and
+ * the JS only ever toggles classes.
+ */
+import type { CollectionEntry } from 'astro:content';
+import ArchDiagram from './ArchDiagram.astro';
+import { withBase } from '../config/paths';
+
+interface Props {
+  projects: CollectionEntry<'work'>[];
+}
+const { projects } = Astro.props;
+
+const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+
+/**
+ * Which leaves a project gets. diagram, decision and proof are all optional in
+ * the schema, so this is computed per project rather than assumed — a case
+ * study with only a problem opens as a one-leaf notebook instead of breaking.
+ */
+function leavesFor(entry: CollectionEntry<'work'>) {
+  const d = entry.data;
+  return [
+    { kind: 'problem', label: 'Problem' } as const,
+    ...(d.diagram ? [{ kind: 'arch', label: 'Architecture' } as const] : []),
+    ...(d.decision ? [{ kind: 'decision', label: 'Decision' } as const] : []),
+    ...(d.proof ? [{ kind: 'proof', label: 'Proof' } as const] : []),
+    { kind: 'stack', label: 'Stack' } as const,
+  ];
+}
+---
+
+{
+  projects.map((p) => {
+    const leaves = leavesFor(p);
+    const hasLinks = Boolean(p.data.links.repo || p.data.links.live);
+    return (
+      <dialog class="nb" id={`nb-${p.id}`} aria-label={`${p.data.title}, project notebook`}>
+        <div class="nb-shell">
+          <header class="nb-chrome">
+            <div class="nb-ident">
+              <h2 class="nb-title">{p.data.title}</h2>
+              <p class="nb-sub meta">
+                {p.data.category ? `${p.data.year}, ${p.data.category}` : String(p.data.year)}
+              </p>
+            </div>
+            <div class="nb-chrome-actions">
+              <button type="button" class="nb-btn" data-nb-details>
+                Links &amp; details
+              </button>
+              <button type="button" class="nb-btn nb-close" data-nb-close aria-label="Close notebook">
+                Close
+              </button>
+            </div>
+          </header>
+
+          <div class="nb-book" style={`--n:${leaves.length}`} data-nb-book>
+            {leaves.map((leaf, i) => (
+              <article class="nb-leaf" style={`--i:${i}`} data-nb-leaf={i}>
+                <div class="nb-face nb-front">
+                  <span class="nb-shade" aria-hidden="true" />
+                  <span class="nb-corner" aria-hidden="true" />
+                  <div class="nb-sheet">
+                    <p class="nb-numeral meta">
+                      <span class="nb-roman">{NUMERALS[i]}</span>
+                      {leaf.label}
+                    </p>
+
+                    {leaf.kind === 'problem' && <p class="nb-lede">{p.data.problem}</p>}
+
+                    {leaf.kind === 'arch' && p.data.diagram && (
+                      <div class="nb-diagram">
+                        <ArchDiagram
+                          caption={p.data.diagram.caption}
+                          svg={p.data.diagram.svg}
+                          layers={p.data.diagram.layers}
+                          title={p.data.title}
+                        />
+                      </div>
+                    )}
+
+                    {leaf.kind === 'decision' && p.data.decision && (
+                      <div class="nb-decision">
+                        <h3 class="nb-q">{p.data.decision.question}</h3>
+                        <div class="nb-cols">
+                          <div>
+                            <p class="meta nb-key">chose</p>
+                            <p class="nb-chose">{p.data.decision.chose}</p>
+                          </div>
+                          <div>
+                            <p class="meta nb-key">rejected</p>
+                            <ul class="nb-rejected">
+                              {p.data.decision.rejected.map((r) => (
+                                <li>{r}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                        <p class="nb-why">{p.data.decision.why}</p>
+                      </div>
+                    )}
+
+                    {leaf.kind === 'proof' && p.data.proof && (
+                      <div class="nb-proof">
+                        <p class="nb-figure">{p.data.proof.summary}</p>
+                        {p.data.proof.caption && <p class="nb-why">{p.data.proof.caption}</p>}
+                        <a class="meta u" href={withBase(`/work/${p.id}`)}>
+                          Read the artifact in full →
+                        </a>
+                      </div>
+                    )}
+
+                    {leaf.kind === 'stack' && (
+                      <ul class="nb-stack">
+                        {p.data.stack.map((s) => (
+                          <li class="meta">{s}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+                <div class="nb-face nb-back" aria-hidden="true">
+                  <span class="nb-back-mark meta">{p.data.title}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <nav class="nb-nav" aria-label="Notebook pages">
+            <button type="button" class="nb-arrow" data-nb-prev aria-label="Previous page">
+              ←
+            </button>
+            <ol class="nb-index">
+              {leaves.map((leaf, i) => (
+                <li>
+                  <button type="button" class="nb-dot" data-nb-go={i}>
+                    <span class="nb-dot-n meta">{NUMERALS[i]}</span>
+                    <span class="nb-dot-label meta">{leaf.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <button type="button" class="nb-arrow" data-nb-next aria-label="Next page">
+              →
+            </button>
+          </nav>
+
+          {/*
+            The details card. Not a nested <dialog> — nesting modals fights the
+            parent's focus trap. It is a layer inside this one, and the JS marks
+            the book inert while it is up, which gets the same result.
+          */}
+          <div class="nb-details-layer" data-nb-details-layer hidden>
+            <div class="nb-card" role="group" aria-label={`${p.data.title} links and details`}>
+              <p class="meta nb-key">details</p>
+              <h3 class="nb-card-title">{p.data.title}</h3>
+              <p class="nb-card-sum">{p.data.summary}</p>
+
+              <dl class="nb-facts">
+                <div>
+                  <dt class="meta nb-key">year</dt>
+                  <dd class="meta">{p.data.year}</dd>
+                </div>
+                {p.data.category && (
+                  <div>
+                    <dt class="meta nb-key">kind</dt>
+                    <dd class="meta">{p.data.category}</dd>
+                  </div>
+                )}
+              </dl>
+
+              <ul class="nb-chips">
+                {p.data.stack.map((s) => (
+                  <li class="meta">{s}</li>
+                ))}
+              </ul>
+
+              <div class="nb-links">
+                {p.data.links.live && (
+                  <a class="nb-link nb-link-lead" href={p.data.links.live} rel="noopener">
+                    <span class="meta nb-key">live</span>
+                    <span class="nb-link-text">Visit the site ↗</span>
+                  </a>
+                )}
+                {p.data.links.repo && (
+                  <a class="nb-link" href={p.data.links.repo} rel="noopener">
+                    <span class="meta nb-key">source</span>
+                    <span class="nb-link-text">GitHub repository ↗</span>
+                  </a>
+                )}
+                {!hasLinks && (
+                  <p class="nb-noline meta">No public repository or deployment yet.</p>
+                )}
+                <a class="nb-link" href={withBase(`/work/${p.id}`)}>
+                  <span class="meta nb-key">long form</span>
+                  <span class="nb-link-text">Full case study →</span>
+                </a>
+              </div>
+
+              <button type="button" class="nb-btn nb-card-close" data-nb-details-close>
+                Back to the notebook
+              </button>
+            </div>
+          </div>
+        </div>
+      </dialog>
+    );
+  })
+}
+
+<style>
+  /* ── shell ───────────────────────────────────────────────────── */
+  .nb {
+    width: min(78rem, 100vw - 2rem);
+    max-width: none;
+    height: min(46rem, 100svh - 2rem);
+    max-height: none;
+    /* Explicit, not inherited: a modal <dialog> is centred by the UA's
+       `margin: auto`, and Tailwind's preflight zeroes every element's margin —
+       without this the notebook pins itself to the top-left corner. */
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    overflow: visible;
+  }
+
+  .nb::backdrop {
+    background: rgba(8, 9, 11, 0.86);
+    backdrop-filter: blur(3px);
+  }
+
+  .nb-shell {
+    position: relative;
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: clamp(0.75rem, 2vh, 1.25rem);
+  }
+
+  /* ── chrome ──────────────────────────────────────────────────── */
+  .nb-chrome {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    color: #f2f1ed;
+  }
+
+  .nb-title {
+    font-family: var(--font-compress);
+    font-size: clamp(1.5rem, 3.4vw, 2.5rem);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .nb-sub {
+    margin: 0.35rem 0 0;
+    color: rgba(242, 241, 237, 0.62);
+  }
+
+  .nb-chrome-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .nb-btn {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: #f2f1ed;
+    background: transparent;
+    border: 1px solid rgba(242, 241, 237, 0.3);
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.85rem;
+    cursor: pointer;
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+
+  .nb-btn:hover,
+  .nb-btn:focus-visible {
+    background: #f2f1ed;
+    border-color: #f2f1ed;
+    color: #14151a;
+  }
+
+  /* ── the book ────────────────────────────────────────────────── */
+  /* perspective without preserve-3d: the book stays a flat stacking context so
+     z-index still orders the leaves, while each leaf gets its own 3D space for
+     its two faces. preserve-3d here would hand sorting to the geometry and the
+     stack would shuffle itself mid-turn. */
+  .nb-book {
+    position: relative;
+    height: 100%;
+    perspective: 2400px;
+  }
+
+  .nb-leaf {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform-origin: left center;
+    transition: transform 780ms cubic-bezier(0.22, 0.61, 0.24, 1);
+    z-index: calc(var(--n) - var(--i));
+  }
+
+  /* 178deg rather than 180: a face exactly edge-on to the viewer flickers
+     between itself and its backface on some GPUs. Two degrees of rake is
+     invisible and stops it. */
+  .nb-leaf.is-turned {
+    transform: rotateY(-178deg);
+    /* Turned leaves pile up on the left in the order they were turned, so the
+       page you just turned sits on top of the one before it. */
+    z-index: calc(var(--n) + var(--i) + 1);
+  }
+
+  .nb-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    background: var(--color-ground);
+    border-radius: 0.3rem;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(8, 9, 11, 0.45);
+  }
+
+  .nb-back {
+    transform: rotateY(180deg);
+    background: var(--color-ground-deep);
+    display: grid;
+    place-items: center;
+  }
+
+  .nb-back-mark {
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Paper depth at the spine, permanent and subtle. */
+  .nb-front::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4rem;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      rgba(20, 21, 26, 0.09),
+      rgba(20, 21, 26, 0.02) 55%,
+      transparent
+    );
+  }
+
+  /* Swept across the page mid-turn. An animation, not a transition, because the
+     shadow has to rise and fall inside one turn — a transition can only go one
+     way. JS adds .is-turning for exactly the turn's duration. */
+  .nb-shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      100deg,
+      rgba(8, 9, 11, 0.55),
+      rgba(8, 9, 11, 0.12) 45%,
+      transparent 70%
+    );
+  }
+
+  .nb-leaf.is-turning .nb-shade {
+    animation: nb-curl 780ms cubic-bezier(0.22, 0.61, 0.24, 1);
+  }
+
+  @keyframes nb-curl {
+    0% { opacity: 0; }
+    42% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* The corner fold — the affordance that says this is paper. Lifts on hover of
+     the leaf, so the invitation appears before you click anything. */
+  .nb-corner {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    pointer-events: none;
+    background: linear-gradient(
+      315deg,
+      var(--color-ground-deep) 0%,
+      var(--color-ground-deep) 48%,
+      rgba(20, 21, 26, 0.16) 50%,
+      transparent 52%
+    );
+    transition: width 320ms ease, height 320ms ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .nb-leaf:not(.is-turned):hover .nb-corner {
+      width: 4rem;
+      height: 4rem;
+    }
+  }
+
+  .nb-sheet {
+    position: relative;
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: clamp(1.5rem, 4vw, 3.25rem);
+    padding-left: clamp(2.5rem, 6vw, 5rem);
+  }
+
+  .nb-numeral {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    margin: 0 0 clamp(1.25rem, 3vh, 2rem);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .nb-roman {
+    color: var(--color-accent);
+  }
+
+  /* ── leaf content ────────────────────────────────────────────── */
+  .nb-lede {
+    margin: 0;
+    max-width: 46ch;
+    font-size: clamp(1.125rem, 1.6vw, 1.5rem);
+    line-height: 1.45;
+  }
+
+  .nb-diagram {
+    max-width: 100%;
+  }
+
+  .nb-q {
+    font-family: var(--font-sans);
+    font-size: clamp(1.125rem, 1.6vw, 1.5rem);
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+    max-width: 40ch;
+  }
+
+  .nb-cols {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 1.75rem;
+  }
+
+  @media (min-width: 46rem) {
+    .nb-cols {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 2.5rem;
+    }
+  }
+
+  .nb-key {
+    margin: 0 0 0.5rem;
+    color: var(--color-muted);
+    text-transform: lowercase;
+  }
+
+  .nb-chose {
+    margin: 0;
+    color: var(--color-accent);
+    max-width: 30ch;
+  }
+
+  .nb-rejected {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--color-muted);
+    display: grid;
+    gap: 0.5rem;
+    max-width: 34ch;
+  }
+
+  .nb-why {
+    margin: 0 0 1rem;
+    max-width: 62ch;
+    color: var(--color-muted);
+    font-size: 0.975rem;
+    line-height: 1.6;
+  }
+
+  .nb-figure {
+    font-family: var(--font-mono);
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    margin: 0 0 1rem;
+  }
+
+  .nb-stack,
+  .nb-chips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .nb-stack li,
+  .nb-chips li {
+    border: 1px solid var(--color-rule);
+    border-radius: 0.25rem;
+    padding: 0.4rem 0.7rem;
+  }
+
+  /* ── nav ─────────────────────────────────────────────────────── */
+  .nb-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #f2f1ed;
+  }
+
+  .nb-arrow {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    line-height: 1;
+    color: #f2f1ed;
+    background: transparent;
+    border: 1px solid rgba(242, 241, 237, 0.3);
+    border-radius: 0.25rem;
+    padding: 0.55rem 0.8rem;
+    cursor: pointer;
+    transition: background-color 200ms ease, color 200ms ease, opacity 200ms ease;
+  }
+
+  .nb-arrow:hover:not(:disabled),
+  .nb-arrow:focus-visible {
+    background: #f2f1ed;
+    color: #14151a;
+  }
+
+  .nb-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .nb-index {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .nb-dot {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid rgba(242, 241, 237, 0.24);
+    padding: 0.5rem 0.65rem 0.4rem;
+    cursor: pointer;
+    color: rgba(242, 241, 237, 0.55);
+    transition: color 200ms ease, border-color 200ms ease;
+  }
+
+  .nb-dot:hover,
+  .nb-dot:focus-visible {
+    color: #f2f1ed;
+    border-color: #f2f1ed;
+  }
+
+  .nb-dot[aria-current='true'] {
+    color: #f2f1ed;
+    border-color: var(--color-accent);
+  }
+
+  .nb-dot-n {
+    color: var(--color-accent);
+  }
+
+  .nb-dot-label {
+    display: none;
+    /* .meta sets color: var(--color-muted), which is dark ink here — this
+       chrome sits on the dark backdrop, not on paper, so it has to opt out. */
+    color: inherit;
+  }
+
+  @media (min-width: 46rem) {
+    .nb-dot-label {
+      display: inline;
+    }
+  }
+
+  /* ── details layer ───────────────────────────────────────────── */
+  .nb-details-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(8, 9, 11, 0.55);
+    border-radius: 0.3rem;
+  }
+
+  .nb-details-layer[hidden] {
+    display: none;
+  }
+
+  .nb-card {
+    width: min(34rem, 100%);
+    max-height: 100%;
+    overflow-y: auto;
+    background: var(--color-ground);
+    border-radius: 0.3rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    box-shadow: 0 30px 80px rgba(8, 9, 11, 0.6);
+  }
+
+  .nb-card-title {
+    font-family: var(--font-compress);
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    margin: 0 0 0.75rem;
+  }
+
+  .nb-card-sum {
+    margin: 0 0 1.5rem;
+    color: var(--color-muted);
+    max-width: 44ch;
+  }
+
+  .nb-facts {
+    display: flex;
+    gap: 2rem;
+    margin: 0 0 1.25rem;
+  }
+
+  .nb-facts dt,
+  .nb-facts dd {
+    margin: 0;
+  }
+
+  .nb-chips {
+    margin-bottom: 1.5rem;
+  }
+
+  .nb-links {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .nb-link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid var(--color-rule);
+    padding: 0.85rem 0.25rem;
+    transition: padding-left 260ms cubic-bezier(0.4, 0, 0.2, 1), color 200ms ease;
+  }
+
+  .nb-link:hover,
+  .nb-link:focus-visible {
+    padding-left: 0.85rem;
+    color: var(--color-accent);
+  }
+
+  .nb-link-text {
+    font-family: var(--font-compress);
+    font-size: clamp(1.125rem, 2.2vw, 1.5rem);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
+
+  .nb-link-lead .nb-link-text {
+    color: var(--color-accent);
+  }
+
+  .nb-noline {
+    margin: 0;
+    padding: 0.85rem 0.25rem;
+    border-top: 1px solid var(--color-rule);
+    color: var(--color-muted);
+  }
+
+  .nb-card-close {
+    color: var(--color-text);
+    border-color: var(--color-rule);
+  }
+
+  .nb-card-close:hover,
+  .nb-card-close:focus-visible {
+    background: var(--color-text);
+    color: var(--color-ground);
+    border-color: var(--color-text);
+  }
+
+  /* ── small screens ───────────────────────────────────────────── */
+  @media (max-width: 46rem) {
+    .nb {
+      width: 100vw;
+      height: 100svh;
+      margin: 0;
+      max-height: 100svh;
+    }
+    .nb-shell {
+      padding: 0.75rem;
+    }
+    .nb-chrome-actions {
+      width: 100%;
+    }
+    .nb-btn {
+      flex: 1;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const books = document.querySelectorAll('.nb');
+    if (!books.length || typeof HTMLDialogElement === 'undefined') return;
+
+    /** Matches the .nb-leaf transition duration; the shading animation shares it. */
+    const TURN_MS = 780;
+
+    books.forEach((dlg) => {
+      const book = dlg.querySelector('[data-nb-book]');
+      const leaves = Array.from(dlg.querySelectorAll('[data-nb-leaf]'));
+      const dots = Array.from(dlg.querySelectorAll('[data-nb-go]'));
+      const prev = dlg.querySelector('[data-nb-prev]');
+      const next = dlg.querySelector('[data-nb-next]');
+      const detailsLayer = dlg.querySelector('[data-nb-details-layer]');
+      const shell = dlg.querySelector('.nb-shell');
+      if (!book || !leaves.length) return;
+
+      let at = 0;
+
+      function render() {
+        leaves.forEach((leaf, i) => leaf.classList.toggle('is-turned', i < at));
+        dots.forEach((d, i) => d.setAttribute('aria-current', String(i === at)));
+        if (prev) prev.disabled = at === 0;
+        if (next) next.disabled = at === leaves.length - 1;
+      }
+
+      function go(to) {
+        const target = Math.max(0, Math.min(leaves.length - 1, to));
+        if (target === at) return;
+        // Flag every leaf that actually moves, so a jump from the index sweeps
+        // the shading across all of them rather than only the first.
+        const lo = Math.min(at, target);
+        const hi = Math.max(at, target);
+        for (let i = lo; i < hi; i++) {
+          const leaf = leaves[i];
+          leaf.classList.add('is-turning');
+          setTimeout(() => leaf.classList.remove('is-turning'), TURN_MS);
+        }
+        at = target;
+        render();
+      }
+
+      dots.forEach((d) => d.addEventListener('click', () => go(Number(d.dataset.nbGo))));
+      prev?.addEventListener('click', () => go(at - 1));
+      next?.addEventListener('click', () => go(at + 1));
+
+      dlg.querySelector('[data-nb-close]')?.addEventListener('click', () => dlg.close());
+
+      // Details layer. The book is marked inert rather than nesting a second
+      // <dialog>, which would fight this one's focus trap.
+      const openDetails = () => {
+        detailsLayer.hidden = false;
+        book.inert = true;
+        dlg.querySelector('.nb-nav').inert = true;
+        detailsLayer.querySelector('a, button')?.focus();
+      };
+      const closeDetails = () => {
+        detailsLayer.hidden = true;
+        book.inert = false;
+        dlg.querySelector('.nb-nav').inert = false;
+        dlg.querySelector('[data-nb-details]')?.focus();
+      };
+      dlg.querySelector('[data-nb-details]')?.addEventListener('click', openDetails);
+      dlg.querySelector('[data-nb-details-close]')?.addEventListener('click', closeDetails);
+
+      dlg.addEventListener('keydown', (e) => {
+        if (!detailsLayer.hidden) {
+          // Esc closes the details layer first, and only then the notebook.
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeDetails();
+          }
+          return;
+        }
+        if (e.key === 'ArrowRight') { e.preventDefault(); go(at + 1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); go(at - 1); }
+      });
+
+      // Swipe. Tracked on the shell so the gesture works over the nav too.
+      let x0 = null;
+      let y0 = null;
+      shell.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') return;
+        x0 = e.clientX;
+        y0 = e.clientY;
+      }, { passive: true });
+      shell.addEventListener('pointerup', (e) => {
+        if (x0 === null) return;
+        const dx = e.clientX - x0;
+        const dy = e.clientY - y0;
+        x0 = null;
+        // Horizontal intent only — otherwise a scroll down the sheet turns pages.
+        if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? at + 1 : at - 1);
+      }, { passive: true });
+
+      // Reset on close so reopening starts at the first leaf.
+      dlg.addEventListener('close', () => {
+        at = 0;
+        detailsLayer.hidden = true;
+        book.inert = false;
+        dlg.querySelector('.nb-nav').inert = false;
+        leaves.forEach((l) => l.classList.remove('is-turned', 'is-turning'));
+        render();
+      });
+
+      render();
+    });
+
+    // The rows stay real links; this only intercepts when the notebook exists.
+    document.querySelectorAll('[data-notebook]').forEach((row) => {
+      row.addEventListener('click', (e) => {
+        // Never swallow a modified click — cmd/ctrl/middle still opens the
+        // case study in a new tab, which is what those gestures promise.
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        const dlg = document.getElementById(`nb-${row.dataset.notebook}`);
+        if (!dlg || typeof dlg.showModal !== 'function') return;
+        e.preventDefault();
+        dlg.showModal();
+      });
+    });
+  })();
+</script>
