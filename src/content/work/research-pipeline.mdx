@@ -1,0 +1,86 @@
+---
+title: Multi-Agent Research Pipeline
+year: 2026
+order: 3
+category: Agent pipeline
+role: Solo — graph, agents, prompts
+summary: >-
+  An autonomous research pipeline: a LangGraph state machine searches the live web,
+  summarises each source on its own, then writes one cited report from those summaries.
+stack:
+  - Python
+  - LangGraph
+  - LangChain
+  - Groq (LLaMA 3.3 70B)
+  - Tavily
+  - Streamlit
+links:
+  repo: https://github.com/arihantjaino7/multi-agent-research-pipeline
+
+problem: >-
+  Asking one model to research a topic gets you a report written from training data —
+  confident, unsourced, and impossible to check a claim in. This pipeline never lets the
+  writing model see the topic alone: every sentence it writes descends from a page
+  Tavily actually returned, through a summary you can open and read.
+
+diagram:
+  caption: >-
+    Three nodes over one shared ResearchState. Nothing is hidden between them — the raw
+    results, the per-source summaries and the final report are all fields on the same
+    object, so any stage's output can be read on its own.
+  layers:
+    - title: Input
+      nodes:
+        - label: Topic
+          note: Streamlit or CLI
+    - title: Search
+      nodes:
+        - label: Tavily
+          note: 5 results, deep
+    - title: Summarize
+      nodes:
+        - label: One call per source
+          note: not the raw pages
+          emphasis: true
+    - title: Report
+      nodes:
+        - label: Title, summary
+        - label: Findings, conclusion
+    - title: Output
+      nodes:
+        - label: outputs/*.md
+
+decision:
+  question: What does the writing model actually see?
+  chose: Five independent per-source summaries, never the five raw pages
+  rejected:
+    - All five sources concatenated into one report prompt
+    - A single search-and-write call with the pages as tool output
+  why: >-
+    Tavily's advanced search returns full page content, and five of those concatenated is
+    a long, wildly uneven prompt — the longest page dominates it and a short, dense source
+    gets skimmed, purely because of length. Summarising each source in its own call gives
+    every source the same weight in the final report no matter how long the original page
+    was, and it leaves an artifact behind: when the report says something that looks wrong,
+    there is a specific summary to open and a specific source behind that summary. The cost
+    is real and worth naming — six model calls per topic instead of one, and a slower run.
+    The alternative is a report that is cheaper to produce and impossible to audit.
+
+proof:
+  kind: output
+  summary: unedited run
+  file: research-pipeline/report.txt
+  caption: >-
+    A report the pipeline produced for "future of quantum computing", exactly as written
+    to outputs/. Nothing here was edited by hand.
+---
+
+The graph is deliberately linear — `search → summarize → report → END` — because nothing
+in the task branches. A state machine earns its keep here not through routing but through
+the shared `ResearchState`: each node returns only the field it owns, so what every stage
+contributed stays separately inspectable after the run.
+
+Summarisation is the one place the loop is sequential rather than concurrent. Five sources
+at one Groq call each is the obvious thing to parallelise next, and the state shape already
+allows it — the summaries list is built from the results list and nothing downstream cares
+about the order they arrive in.
