@@ -33,6 +33,24 @@ const items = [...nav, { href: links.email, label: 'email' }];
           </a>
         ))
       }
+
+      <!--
+        The glyph is one circle with half of it filled: in dark it reads as a
+        moon, in light as a sun past noon, and the switch between them is a
+        180° turn rather than swapping one icon for another. aria-label
+        carries the destination ("switch to light"), not the current state,
+        because that is what activating it does. Rendered with the label for
+        dark, then corrected on the first tick — the server cannot know which
+        theme this reader resolved to.
+      -->
+      <button
+        type="button"
+        class="theme-toggle"
+        data-theme-toggle
+        aria-label="Switch to light theme"
+      >
+        <span class="theme-glyph" aria-hidden="true"></span>
+      </button>
     </nav>
   </div>
 </header>
@@ -143,6 +161,61 @@ const items = [...nav, { href: links.email, label: 'email' }];
       },
       { passive: true },
     );
+  })();
+</script>
+
+<!--
+  The toggle. The palette itself is resolved before first paint by the inline
+  script in Base; this only flips the attribute, remembers the choice, and
+  keeps the label and the browser chrome colour honest.
+
+  is:inline for the same reason the two scripts above are: every route but the
+  homepage ships zero fetched JS, and a theme switch that waits on a bundle is
+  a theme switch that arrives after the reader has already looked away.
+-->
+<script is:inline>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.querySelector('[data-theme-toggle]');
+    if (!btn) return;
+
+    var meta = document.querySelector('meta[name="theme-color"]');
+
+    function paint(theme) {
+      root.dataset.theme = theme;
+      btn.setAttribute(
+        'aria-label',
+        theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
+      );
+      if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b0c0e' : '#efe7d9');
+    }
+
+    // The attribute is already correct; this is only to get the label right,
+    // since the server had to guess one.
+    paint(root.dataset.theme === 'light' ? 'light' : 'dark');
+
+    btn.addEventListener('click', function () {
+      var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      paint(next);
+      try {
+        localStorage.setItem('theme', next);
+      } catch (e) {
+        /* Private mode. The choice holds for this page either way. */
+      }
+    });
+
+    // Until someone has chosen, the site keeps following the OS — including a
+    // change made while this page is open.
+    try {
+      var os = window.matchMedia('(prefers-color-scheme: dark)');
+      os.addEventListener('change', function (e) {
+        var stored = null;
+        try {
+          stored = localStorage.getItem('theme');
+        } catch (err) {}
+        if (stored !== 'light' && stored !== 'dark') paint(e.matches ? 'dark' : 'light');
+      });
+    } catch (e) {}
   })();
 </script>
 
@@ -311,7 +384,63 @@ const items = [...nav, { href: links.email, label: 'email' }];
     transition: none;
   }
 
+  /* Sized and padded to the pills' own height so the bar's rhythm holds, but
+     without their expanding fill: the fill is what marks a destination, and
+     this does not go anywhere. */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.4rem;
+    padding: calc(0.7rem + 1px) 0.85rem;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .theme-glyph {
+    position: relative;
+    display: block;
+    width: 0.9375rem;
+    height: 0.9375rem;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    overflow: hidden;
+    transition: transform 420ms cubic-bezier(0.62, 0.04, 0.3, 1);
+  }
+
+  /* The filled half. Inset by the border so it meets the ring cleanly rather
+     than leaving a hairline of ground between the two. */
+  .theme-glyph::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    right: 50%;
+    background: currentColor;
+  }
+
+  :root[data-theme='light'] .theme-glyph {
+    transform: rotate(180deg);
+  }
+
+  .theme-toggle:hover .theme-glyph,
+  .theme-toggle:focus-visible .theme-glyph {
+    color: var(--color-accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-glyph {
+      transition: none;
+    }
+  }
+
   @media (max-width: 34rem) {
+    .theme-toggle {
+      padding: 0.55rem 0.5rem;
+    }
     .header-inner {
       gap: 0.75rem;
     }

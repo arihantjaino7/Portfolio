@@ -44,15 +44,15 @@ const skillItems = skills.flatMap((g) => g.items);
 
   <!--
     S1 — landing. A dark card: layered paper strata behind, the wordmark
-    centred, halftone dot columns down both margins. `.dark-panel` is the same
-    class the achievements, about and outro sections already carry, so the
-    hero re-themes itself off the tokens rather than hard-coding a palette.
+    centred, halftone dot columns down both margins. It carries no palette of
+    its own: in dark it is the ground, in light it is beige, and the strata
+    behind it are drawn from whichever pair of tokens is live.
 
     The visible name is the first name alone. At this size the surname would
     force the type down a step to fit, and the full name is already in the
     header wordmark, the page title and the outro.
   -->
-  <section id="landing" class="screen landing dark-panel">
+  <section id="landing" class="screen landing">
     <HeroCanvas />
     <span class="landing-dots landing-dots-l" aria-hidden="true"></span>
     <span class="landing-dots landing-dots-r" aria-hidden="true"></span>
@@ -111,12 +111,14 @@ const skillItems = skills.flatMap((g) => g.items);
 
   <!-- S3 — work -->
   <!--
-    Dark like the sections either side of it. Nothing in the rows needed
-    touching: the slab is var(--color-text) and the text that lands on it is
-    var(--color-ground), so .dark-panel swaps which of the two is the ink and
-    which is the paper and the hover inverts itself.
+    Follows the theme rather than forcing a palette, like the landing above
+    it: in dark both are the ground, in light both are beige, and the panels
+    either side of them are what the page alternates against. Nothing in the
+    rows needed touching either way — the slab is var(--color-text) and the
+    text that lands on it is var(--color-ground), so the hover inverts itself
+    whichever way round the two are.
   -->
-  <section id="work" class="dark-panel work-section">
+  <section id="work" class="work-section">
     <div class="work-inner">
       <div class="work-head">
         <Reveal as="h2" class="work-title" lines={['Projects']} />
@@ -336,7 +338,7 @@ const skillItems = skills.flatMap((g) => g.items);
     width: clamp(1.5rem, calc(var(--gutter) * 0.62), 3.25rem);
     background-image: radial-gradient(
       circle at center,
-      rgba(242, 241, 237, 0.2) 0.85px,
+      color-mix(in srgb, var(--color-text) 20%, transparent) 0.85px,
       transparent 1.3px
     );
     background-size: 0.5rem 0.5rem;
