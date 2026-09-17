@@ -69,7 +69,7 @@ const skillItems = skills.flatMap((g) => g.items);
   </section>
 
   <!-- S2 — achievements, sticky-stacked full-height panels -->
-  <section id="achievements" class="dark-panel achievements">
+  <section id="achievements" class="achievements">
     <div class="achievements-intro">
       <Reveal as="h2" class="achievements-title" lines={['Achievements']} />
     </div>
@@ -379,20 +379,25 @@ const skillItems = skills.flatMap((g) => g.items);
      carries Reveal.astro's scope hash rather than this file's, so a plain
      scoped selector here would silently never match. Same story everywhere
      else below that styles a class passed into <Reveal>. */
+  /* The high-contrast serif rather than the condensed grotesque. Hairlines
+     against thick stems is the one thing in type that reads as royal, and it
+     is what the beige is for — a condensed grotesque wordmark was shouting
+     over a surface meant to be a paper. Set large, in caps, with enough
+     tracking that the thin strokes have air around them. */
   .landing-hero :global(.landing-name) {
-    font-family: var(--font-compress);
+    font-family: var(--font-display);
     /* Sized off the viewport rather than --text-display: this is a wordmark
-       set to span the card, and the tracking below is part of the measurement
-       — seven letters at 0.06em each is nearly half a character of extra
+       set to span the page, and the tracking below is part of the measurement
+       — seven letters at 0.04em each is a third of a character of extra
        width, which the shared display step knows nothing about. */
-    font-size: clamp(3rem, 14vw, 13rem);
-    font-weight: 400;
+    font-size: clamp(2.75rem, 11vw, 10rem);
+    font-weight: 500;
     text-transform: uppercase;
-    line-height: 0.9;
+    line-height: 1;
     /* Tracked out, and the trailing space trimmed back off the right edge so
        the word still reads optically centred. */
-    letter-spacing: 0.06em;
-    margin: 0 0 0 0.06em;
+    letter-spacing: 0.04em;
+    margin: 0 0 0 0.04em;
   }
 
   /* A phone's gutter eats a far larger share of the card than a desktop's, so
@@ -401,7 +406,7 @@ const skillItems = skills.flatMap((g) => g.items);
      desktop size past the margins. */
   @media (max-width: 46rem) {
     .landing-hero :global(.landing-name) {
-      font-size: 19vw;
+      font-size: 15vw;
     }
   }
 
