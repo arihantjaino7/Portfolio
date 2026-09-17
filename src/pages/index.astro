@@ -379,25 +379,20 @@ const skillItems = skills.flatMap((g) => g.items);
      carries Reveal.astro's scope hash rather than this file's, so a plain
      scoped selector here would silently never match. Same story everywhere
      else below that styles a class passed into <Reveal>. */
-  /* The high-contrast serif rather than the condensed grotesque. Hairlines
-     against thick stems is the one thing in type that reads as royal, and it
-     is what the beige is for — a condensed grotesque wordmark was shouting
-     over a surface meant to be a paper. Set large, in caps, with enough
-     tracking that the thin strokes have air around them. */
   .landing-hero :global(.landing-name) {
-    font-family: var(--font-display);
+    font-family: var(--font-compress);
     /* Sized off the viewport rather than --text-display: this is a wordmark
        set to span the page, and the tracking below is part of the measurement
-       — seven letters at 0.04em each is a third of a character of extra
+       — seven letters at 0.06em each is nearly half a character of extra
        width, which the shared display step knows nothing about. */
-    font-size: clamp(2.75rem, 11vw, 10rem);
-    font-weight: 500;
+    font-size: clamp(3rem, 14vw, 13rem);
+    font-weight: 400;
     text-transform: uppercase;
-    line-height: 1;
+    line-height: 0.9;
     /* Tracked out, and the trailing space trimmed back off the right edge so
        the word still reads optically centred. */
-    letter-spacing: 0.04em;
-    margin: 0 0 0 0.04em;
+    letter-spacing: 0.06em;
+    margin: 0 0 0 0.06em;
   }
 
   /* A phone's gutter eats a far larger share of the card than a desktop's, so
@@ -406,7 +401,7 @@ const skillItems = skills.flatMap((g) => g.items);
      desktop size past the margins. */
   @media (max-width: 46rem) {
     .landing-hero :global(.landing-name) {
-      font-size: 15vw;
+      font-size: 19vw;
     }
   }
 
@@ -493,8 +488,25 @@ const skillItems = skills.flatMap((g) => g.items);
     display: flex;
     flex-direction: column;
     /* Opaque ground is what makes the occlusion read — without it the panel
-       below would show through as this one scrolls over it. */
-    background: var(--color-ground);
+       below would show through as this one scrolls over it. The texture rides
+       on top of that ground as background-image layers rather than replacing
+       it, so the occlusion still holds: a halftone field, the same language
+       as the columns down the hero's margins, and a soft lift along the head
+       so each panel reads as catching light where it meets the one above.
+       Both are drawn from --color-text, so they follow the theme. */
+    background-color: var(--color-ground);
+    background-image:
+      radial-gradient(
+        circle at center,
+        color-mix(in srgb, var(--color-text) 11%, transparent) 0.85px,
+        transparent 1.3px
+      ),
+      radial-gradient(
+        85% 55% at 50% 0%,
+        color-mix(in srgb, var(--color-text) 4.5%, transparent),
+        transparent 72%
+      );
+    background-size: 0.75rem 0.75rem, auto;
     border-top: 1px solid var(--color-rule);
     padding-inline: var(--ach-pad);
   }

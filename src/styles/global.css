@@ -133,8 +133,8 @@ html {
    the scroll, which is what a texture printed on the page would do.
 
    The noise is an inline feTurbulence rather than a file: no request, no
-   asset to keep, and the frequency and opacity stay legible here. At 5% it
-   is invisible until you go looking, including over type. pointer-events is
+   asset to keep, and the frequency and opacity stay legible here. At 8% the
+   tooth is there to see without ever competing with type. pointer-events is
    off, so nothing underneath loses a click. */
 html[data-theme='light']::after {
   content: '';
@@ -142,7 +142,7 @@ html[data-theme='light']::after {
   inset: 0;
   z-index: 100;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
   background-size: 180px 180px;
 }
 
