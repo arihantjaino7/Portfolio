@@ -60,8 +60,16 @@
       return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as [number, number, number];
     }
 
-    const ground = rgbOf('--color-ground', [11, 12, 14]);
-    const text = rgbOf('--color-text', [242, 241, 237]);
+    // Re-read rather than captured once: the header's toggle swaps the theme
+    // without a reload, and a field still painted in the old palette would sit
+    // as a rectangle of the wrong colour over the new one.
+    let ground = rgbOf('--color-ground', [11, 12, 14]);
+    let text = rgbOf('--color-text', [242, 241, 237]);
+
+    function readTokens() {
+      ground = rgbOf('--color-ground', [11, 12, 14]);
+      text = rgbOf('--color-text', [242, 241, 237]);
+    }
 
     /** Ground lifted `f` of the way toward the text colour. */
     function tone(f: number) {
@@ -241,6 +249,16 @@
     resize();
     window.addEventListener('resize', resize, { passive: true });
 
+    // data-theme is the only thing that changes these, and it changes on
+    // <html>, so one attribute observer covers every future theme too.
+    new MutationObserver(() => {
+      readTokens();
+      draw();
+    }).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
     // Nothing to animate while the hero is off screen or the tab is hidden —
     // and a pointer that left over the top edge should not leave the loop
     // running behind the rest of the page.
@@ -301,8 +319,16 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(62% 52% at 50% 40%, rgba(242, 241, 237, 0.055), transparent 72%),
-      radial-gradient(120% 90% at 50% 120%, rgba(0, 0, 0, 0.32), transparent 62%);
+      radial-gradient(
+        62% 52% at 50% 40%,
+        color-mix(in srgb, var(--color-text) 5.5%, transparent),
+        transparent 72%
+      ),
+      radial-gradient(
+        120% 90% at 50% 120%,
+        color-mix(in srgb, var(--color-text) 26%, transparent),
+        transparent 62%
+      );
   }
 
   /* Shown only if the canvas never paints (no JS, no 2D context) — the same
@@ -314,11 +340,11 @@
     background: linear-gradient(
       to bottom,
       var(--color-ground) 0 34%,
-      rgba(242, 241, 237, 0.02) 34% 50%,
-      rgba(242, 241, 237, 0.038) 50% 65%,
-      rgba(242, 241, 237, 0.056) 65% 79%,
-      rgba(242, 241, 237, 0.074) 79% 92%,
-      rgba(242, 241, 237, 0.092) 92% 100%
+      color-mix(in srgb, var(--color-text) 2%, var(--color-ground)) 34% 50%,
+      color-mix(in srgb, var(--color-text) 3.8%, var(--color-ground)) 50% 65%,
+      color-mix(in srgb, var(--color-text) 5.6%, var(--color-ground)) 65% 79%,
+      color-mix(in srgb, var(--color-text) 7.4%, var(--color-ground)) 79% 92%,
+      color-mix(in srgb, var(--color-text) 9.2%, var(--color-ground)) 92% 100%
     );
   }
 </style>
