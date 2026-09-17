@@ -228,21 +228,12 @@ const items = [...nav, { href: links.email, label: 'email' }];
      section in normal flow, so without this it scrolls fully out of view the
      instant any snap fires — including on load.
 
-     Dark on every route and at every scroll position. The bar declares the
-     same five tokens .dark-panel does, scoped to itself, so the wordmark, the
-     pills and their expanding hover fill all invert off the tokens with no
-     per-element rules — the pill fills cream and its label goes black. It
-     sits outside every .dark-panel wrapper, so without these declarations it
-     would resolve to the light palette regardless of what it is floating
-     over. */
+     The bar takes the page's theme rather than declaring one: dark in dark,
+     beige in light. Every colour below reads a token, so the wordmark, the
+     pills and their expanding hover fill all follow it with no per-element
+     rules — the fill is always --color-text and the label on it always
+     --color-ground, whichever way round those two are. */
   .site-header {
-    --color-ground: #0b0c0e;
-    --color-ground-deep: #16181c;
-    --color-text: #f2f1ed;
-    --color-muted: rgba(242, 241, 237, 0.62);
-    --color-rule: rgba(242, 241, 237, 0.14);
-    color-scheme: dark;
-
     position: sticky;
     top: 0;
     z-index: 50;
