@@ -1,1112 +1,128 @@
 ---
-/**
- * Homepage — REDESIGN.md §1, §2. All six sections built: S1 landing, S2
- * achievements (numbered expanding rows), S3 work (hover-reveal rows), S4
- * about, S5 capabilities marquee, S6 outro. The generic engine (Reveal /
- * data-count / data-parallax) does the animating; nothing here hand-rolls a
- * one-off tween.
- */
 import { getCollection } from 'astro:content';
-import Base from '../layouts/Base.astro';
-import Reveal from '../components/Reveal.astro';
-import HeroCanvas from '../components/HeroCanvas.astro';
-import { assets } from '../config/assets';
+import { person, links, skills, achievements, meta } from '../config/site';
 import { withBase } from '../config/paths';
-import { person, achievements, skills, links } from '../config/site';
-import ProjectCard from '../components/ProjectCard.astro';
-
-const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.order - b.data.order,
-);
-
-const skillItems = skills.flatMap((g) => g.items);
+import PixelIcon from '../components/PixelIcon.astro';
+import '@fontsource/pixelify-sans/400.css';
+import '@fontsource/pixelify-sans/500.css';
+import '@fontsource/pixelify-sans/600.css';
+import '../styles/world.css';
+const projects = (await getCollection('work', ({data}) => !data.draft)).sort((a,b) => a.data.order-b.data.order);
+const destinations = [
+  { id:'about', name:'About', icon:'book', place:'The campsite' },
+  { id:'projects', name:'Projects', icon:'chest', place:'The project vault' },
+  { id:'skills', name:'Skills', icon:'pickaxe', place:'The workshop' },
+  { id:'achievements', name:'Milestones', icon:'trophy', place:'The monument' },
+  { id:'contact', name:'Contact', icon:'mail', place:'The post office' },
+];
+const projectIcons = ['gem','shield','branch'];
+const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
-
-<Base ogImage={assets.og('default')} hideFooter>
-  <!--
-    Armed before first paint. Kept from the previous build: later phases that
-    need a load-only entrance (not a scroll-triggered one) key off this class
-    the same way the old hero did, without waiting on the motion bundle.
-  -->
-  <script is:inline>
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.documentElement.classList.add('motion-pending');
-      // Failsafe: if the motion bundle never lands (offline, blocked, parse
-      // error) nothing would ever animate the reveals out of their hidden
-      // state, so drop the gate and show the finished layout instead. motion.ts
-      // clears the class itself as soon as it has wired the elements, which
-      // makes this a no-op on the normal path.
-      setTimeout(function () {
-        document.documentElement.classList.remove('motion-pending');
-      }, 4000);
-    }
-  </script>
-
-  <!--
-    S1 — landing. A dark card: layered paper strata behind, the wordmark
-    centred, halftone dot columns down both margins. It carries no palette of
-    its own: in dark it is the ground, in light it is beige, and the strata
-    behind it are drawn from whichever pair of tokens is live.
-
-    The visible name is the first name alone. At this size the surname would
-    force the type down a step to fit, and the full name is already in the
-    header wordmark, the page title and the outro.
-  -->
-  <section id="landing" class="screen landing">
-    <HeroCanvas />
-    <span class="landing-dots landing-dots-l" aria-hidden="true"></span>
-    <span class="landing-dots landing-dots-r" aria-hidden="true"></span>
-    <div class="landing-inner shell">
-      <div class="landing-hero">
-        <Reveal as="h1" class="landing-name" lines={[person.name.split(' ')[0]]} />
-        <span class="sr-only">{person.name} — {person.statement}</span>
-      </div>
-      <div class="landing-meta">
-        <span class="meta">{person.location}</span>
-        <span class="meta" id="local-time" data-tz="Asia/Kolkata" aria-live="off"></span>
-      </div>
-    </div>
-  </section>
-
-  <!-- S2 — achievements, sticky-stacked full-height panels -->
-  <section id="achievements" class="achievements">
-    <div class="achievements-intro">
-      <Reveal as="h2" class="achievements-title" lines={['Achievements']} />
-    </div>
-
-    <!--
-      The stack effect is pure CSS `position: sticky` — each panel sticks one
-      head-height lower than the one before it, and carries an opaque ground so
-      the next panel occludes the previous panel's body while its head stays
-      pinned. No ScrollTrigger pinning, which means it behaves identically with
-      JS disabled and under prefers-reduced-motion: it is layout, not animation.
-      `--i` drives both the sticky offset and the panel height so the two can
-      never drift apart.
-    -->
-    <ol class="stack">
-      {
-        achievements.map((a, i) => (
-          <li class="stack-item" style={`--i:${i}`}>
-            <article class="ach">
-              <div class="ach-inner">
-                <div class="ach-head">
-                  <span class="ach-index">{String(i + 1).padStart(2, '0')}.</span>
-                  <span class="ach-figure">
-                    {a.prefix}<span data-count={a.value}>{a.value}</span>{a.suffix}
-                  </span>
-                  <h3 class="ach-event">{a.event}</h3>
-                  <span class="ach-year meta">{a.year}</span>
-                </div>
-                <div class="ach-body">
-                  <p class="ach-detail meta">{a.detail}</p>
-                  <p class="ach-blurb">{a.blurb}</p>
-                </div>
-              </div>
-            </article>
-          </li>
-        ))
-      }
-    </ol>
-  </section>
-
-  <!-- S3 — work -->
-  <!--
-    Follows the theme rather than forcing a palette, like the landing above
-    it: in dark both are the ground, in light both are beige, and the panels
-    either side of them are what the page alternates against. Nothing in the
-    rows needed touching either way — the slab is var(--color-text) and the
-    text that lands on it is var(--color-ground), so the hover inverts itself
-    whichever way round the two are.
-  -->
-  <section id="work" class="work-section">
-    <div class="work-inner">
-      <div class="work-head">
-        <Reveal as="h2" class="work-title" lines={['Projects']} />
-        <p class="work-lede-copy">
-          One keeps competition rules honest inside the database. One grades a
-          target's security without sending it a single packet. One won't write
-          a line it can't trace back to a source.
-        </p>
-      </div>
-
-      <!--
-        One <a> per row and nothing interactive inside it: the reference puts a
-        "live website" button in the hovered panel, but the whole row already
-        navigates to the case study, so nesting a second link there would be
-        invalid markup for no added destination. The pill is a presentational
-        affordance instead, and the arrow is decorative.
-      -->
-      <ol class="proj-rows">
-        {
-          projects.map((p) => (
-            <li class="proj">
-              <a class="proj-link" href={withBase(`/work/${p.id}`)} data-card={p.id}>
-                <span class="proj-panel" aria-hidden="true" />
-                <span class="proj-meta meta">
-                  {p.data.category ? `${p.data.year}, ${p.data.category}` : String(p.data.year)}
-                </span>
-                <span class="proj-thumb" aria-hidden="true">
-                  <img
-                    src={assets.project(p.id).shot1}
-                    alt=""
-                    width="640"
-                    height="360"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </span>
-                {/*
-                  Split per character so each letter can roll to its own light
-                  copy on a stagger. aria-label carries the real title and every
-                  fragment is aria-hidden, so a screen reader gets one word
-                  rather than a stream of single letters.
-                */}
-                <h3 class="proj-title" aria-label={p.data.title}>
-                  {[...p.data.title].map((ch, ci) =>
-                    ch === ' ' ? (
-                      <span class="ch-space" aria-hidden="true">
-                        &nbsp;
-                      </span>
-                    ) : (
-                      <span class="ch" style={`--c:${ci}`} aria-hidden="true">
-                        <span class="ch-a">{ch}</span>
-                        <span class="ch-b">{ch}</span>
-                      </span>
-                    ),
-                  )}
-                </h3>
-                <span class="proj-icon" aria-hidden="true">↗</span>
-                <span class="proj-cta meta" aria-hidden="true">↗ View case</span>
-              </a>
-            </li>
-          ))
-        }
-      </ol>
-
-      <a class="meta u all-work" href={withBase('/work')}>All work →</a>
-    </div>
-
-    <!--
-      One <dialog> per project, rendered server-side. With JS off these never
-      open and every row stays an ordinary link to its case study.
-    -->
-    <ProjectCard projects={projects} />
-  </section>
-
-  <!-- S4 — about -->
-  <section id="about" class="screen dark-panel about-section">
-    <div class="shell about-grid">
-      <div class="about-portrait frame" data-reveal="clip">
-        <img
-          src={assets.portrait}
-          alt={`${person.name}, portrait`}
-          width="480"
-          height="480"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <div class="about-copy">
-        <Reveal as="p" class="about-kicker" lines={['Hey —']} />
-        <Reveal as="h2" class="about-name" lines={[`I'm ${person.name}.`]} delay={0.08} />
-        <Reveal as="p" class="about-statement" delay={0.16}>{person.statement}</Reveal>
-        <div class="about-row">
-          <span class="tag meta">About me</span>
-          <a class="meta u" href={withBase('/about')}>More about me →</a>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Arihant Jain — A world of things I build</title>
+    <meta name="description" content={meta.description} />
+    <meta name="theme-color" content="#152b25" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={withBase('/world-favicon.svg')} type="image/svg+xml" />
+    <meta property="og:title" content="Arihant Jain — A world of things I build" />
+    <meta property="og:description" content="Explore a little pixel world. Open a chest. Discover real engineering work." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(withBase('/assets/og/default.png'),Astro.site)} />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <style is:inline set:html={`@font-face{font-family:Manrope;src:url('${withBase('/fonts/manrope-latin-wght-normal.woff2')}') format('woff2');font-weight:200 800;font-display:swap;}`} />
+  </head>
+  <body>
+    <a class="skip-link" href="#direct-portfolio">Skip the game and read the portfolio</a>
+    <main id="world" aria-label="Arihant's playable portfolio">
+      <canvas id="game" tabindex="0" aria-label="Pixel forest world. Use WASD or arrow keys to move, E to interact, and 1 through 5 to open portfolio sections." aria-describedby="game-instructions"></canvas>
+      <div class="world-vignette" aria-hidden="true"></div>
+      <header class="world-header">
+        <a class="identity" href={withBase('/')} aria-label="Arihant Jain home">
+          <span class="identity-block" aria-hidden="true"><span>aj</span></span>
+          <span><strong>Arihant Jain</strong><small>developer & world builder</small></span>
+        </a>
+        <div class="header-actions">
+          <a class="plain-link browse-link" href={withBase('/work')}>Browse portfolio <span aria-hidden="true">↗</span></a>
+          <span class="header-divider"></span>
+          <button class="icon-button" id="sound-toggle" aria-label="Enable sound effects" aria-pressed="false"><PixelIcon name="sound" /><span class="muted-slash" aria-hidden="true"></span></button>
+          <button class="icon-button" id="time-toggle" aria-label="Switch to night" aria-pressed="false"><PixelIcon name="moon" /></button>
+          <button class="icon-button" data-open="help" aria-label="How to play"><PixelIcon name="help" /></button>
         </div>
+      </header>
+      <section class="welcome" aria-labelledby="welcome-title">
+        <h1 id="welcome-title">A little world.<br/>A lot to <span>build.</span></h1>
+        <p>Hey, I’m Arihant. I build AI systems,<br class="desktop-break"/> security tools, and full-stack products.<br class="desktop-break"/> Come have a look around.</p>
+        <div class="welcome-actions">
+          <button class="pixel-button primary" id="start-exploring">Let’s explore <PixelIcon name="arrow" /></button>
+          <button class="text-button" data-open="projects">Just show me the projects</button>
+        </div>
+        <span class="welcome-note"><span class="status-dot"></span> An interactive portfolio, made to be explored.</span>
+      </section>
+      <aside class="mini-map" aria-label="World map">
+        <div class="map-heading"><PixelIcon name="map" /><span>The builder’s grove</span><span class="map-north">N ↑</span></div>
+        <div class="map-art" aria-hidden="true"><span class="map-river"></span><span class="map-path path-h"></span><span class="map-path path-v"></span><span class="map-player" id="map-player"></span></div>
+        {destinations.map((d) => <button class={`map-node node-${d.id}`} data-travel={d.id} aria-label={`Walk to ${d.name}: ${d.place}`} title={d.place}><PixelIcon name={d.icon}/></button>)}
+        <span class="map-caption">Click a landmark to travel</span>
+      </aside>
+      <div class="quest" id="quest"><span class="quest-mark" aria-hidden="true"><PixelIcon name="chest"/></span><div><strong id="quest-title">Every project starts with curiosity.</strong><span id="quest-copy">Find the golden chest to discover my work.</span></div><span class="quest-count" id="visited-count">0 / 5</span></div>
+      <div class="interact-wrap"><button class="interact-prompt" id="interact" hidden><kbd>E</kbd><span id="interact-label">Open project chest</span><span class="tap-label">Tap to open</span></button></div>
+      <div class="world-toast" id="world-toast" role="status" aria-live="polite"></div>
+      <div class="bottom-ui">
+        <p id="game-instructions" class="keyboard-guide"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span><span><kbd>E</kbd> interact</span><span>or click to walk</span></p>
+        <nav class="hotbar" aria-label="Quick portfolio navigation">
+          {destinations.map((d,i) => <button class={`hotbar-slot slot-${d.id}`} data-open={d.id} aria-label={`${d.name}, shortcut ${i+1}`} title={`${d.name} [${i+1}]`}><span class="slot-key">{i+1}</span><PixelIcon name={d.icon}/><span class="slot-name">{d.name}</span><span class="visited-dot" aria-hidden="true"></span></button>)}
+        </nav>
+        <div class="world-meta"><span class="status-dot"></span><span id="biome-label">Woodland · Golden hour</span><span class="coordinates" id="coordinates">X 768 / Y 540</span></div>
       </div>
-    </div>
-  </section>
-
-  <!-- S5 — capabilities marquee -->
-  <section id="capabilities" class="capabilities-section" aria-hidden="true">
-    <div class="marquee-row">
-      <div class="marquee-track marquee-left">
-        {[...skillItems, ...skillItems].map((s) => <span class="meta">{s}</span>)}
+      <div class="touch-controls" aria-label="Touch movement">
+        <div class="dpad"><button data-dir="up" aria-label="Move up"><PixelIcon name="arrow"/></button><button data-dir="left" aria-label="Move left"><PixelIcon name="arrow"/></button><span aria-hidden="true"></span><button data-dir="right" aria-label="Move right"><PixelIcon name="arrow"/></button><button data-dir="down" aria-label="Move down"><PixelIcon name="arrow"/></button></div>
+        <button class="touch-interact" id="touch-interact" disabled aria-label="Interact with nearby landmark"><PixelIcon name="chest"/><span>Interact</span></button>
       </div>
-    </div>
-    <div class="marquee-row">
-      <div class="marquee-track marquee-right">
-        {[...skillItems, ...skillItems].map((s) => <span class="meta">{s}</span>)}
-      </div>
-    </div>
-  </section>
-
-  <!-- S6 — outro -->
-  <section id="outro" class="screen dark-panel outro">
-    <div class="shell outro-inner">
-      <Reveal as="p" class="outro-line" lines={["Let's build", 'something.']} />
-      <a
-        id="outro-email"
-        class="outro-email"
-        href={links.email}
-        data-email={person.email}
-      >
-        {person.email}
-      </a>
-      <ul class="outro-links">
-        <li><a class="meta u" href={links.github} rel="me noopener">GitHub ↗</a></li>
-        <li><a class="meta u" href={links.linkedin} rel="me noopener">LinkedIn ↗</a></li>
-        <li><a class="meta u" href={links.email}>Email ↗</a></li>
-      </ul>
-      <div class="outro-footer meta">
-        <span>© {new Date().getFullYear()} {person.name}</span>
-        <span>
-          {person.location} — <span id="outro-time" data-tz="Asia/Kolkata"></span>
-        </span>
-        <a class="u" href="#landing">Back to top ↑</a>
-      </div>
-    </div>
-  </section>
-
-  <!--
-    A handful of page-specific bits — a live clock (×2), a one-shot scroll
-    cue, click-to-copy email — unrelated to the reveal/parallax/count
-    vocabulary motion.ts generalizes, so they aren't routed through that
-    engine. Independent of prefers-reduced-motion: they update text and
-    toggle classes, they don't animate. The mailto href is real from the
-    start, so copy-to-clipboard is a progressive enhancement, not the only
-    path — email still works with this script absent.
-  -->
-  <script>
-    function liveClock(el: HTMLElement) {
-      const tz = el.dataset.tz ?? 'Asia/Kolkata';
-      const fmt = new Intl.DateTimeFormat('en-IN', {
-        timeZone: tz,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      });
-      const update = () => (el.textContent = fmt.format(new Date()));
-      update();
-      setInterval(update, 30_000);
-    }
-    document
-      .querySelectorAll<HTMLElement>('#local-time, #outro-time')
-      .forEach(liveClock);
-
-    const emailLink = document.getElementById('outro-email');
-    if (emailLink && navigator.clipboard) {
-      emailLink.addEventListener('click', (e) => {
-        const address = emailLink.dataset.email;
-        if (!address) return;
-        e.preventDefault();
-        navigator.clipboard.writeText(address).then(() => {
-          const original = emailLink.textContent;
-          emailLink.textContent = 'copied';
-          setTimeout(() => (emailLink.textContent = original), 1500);
-        });
-      });
-    }
-  </script>
-
-  <!-- Home only — every other route stays at zero client JS. -->
-  <script>
-    import '../scripts/motion';
-  </script>
-</Base>
-
-<style>
-  /* The sticky header (SiteHeader.astro) permanently covers --header-h of the
-     viewport. Since scroll-padding-top lands a snapped section's top just
-     below the header, a plain 100svh section would run --header-h past the
-     visible viewport bottom — the same fold problem this component exists to
-     avoid, just moved to the other edge. Sized to what is actually visible
-     once landed, not the raw viewport. */
-  .screen {
-    min-height: calc(100svh - var(--header-h));
-    display: flex;
-    align-items: center;
-  }
-
-  /* ── S1 landing ─────────────────────────────────────────────── */
-  .landing {
-    position: relative;
-    align-items: stretch;
-    overflow: hidden;
-  }
-
-  /* Halftone columns down both margins. A single repeating radial dot, masked
-     to fade out at the head and foot so the strip has no cut ends. Sized off
-     the gutter so they sit in the page margin at every width rather than
-     crowding the type. */
-  .landing-dots {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    z-index: 1;
-    width: clamp(1.5rem, calc(var(--gutter) * 0.62), 3.25rem);
-    background-image: radial-gradient(
-      circle at center,
-      color-mix(in srgb, var(--color-text) 20%, transparent) 0.85px,
-      transparent 1.3px
-    );
-    background-size: 0.5rem 0.5rem;
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      transparent 0,
-      #000 14%,
-      #000 86%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%);
-    pointer-events: none;
-  }
-
-  .landing-dots-l {
-    left: clamp(0.5rem, calc(var(--gutter) * 0.28), 1.5rem);
-  }
-
-  .landing-dots-r {
-    right: clamp(0.5rem, calc(var(--gutter) * 0.28), 1.5rem);
-  }
-
-  .landing-inner {
-    position: relative;
-    z-index: 2;
-    width: 100%;
-    display: grid;
-    grid-template-rows: 1fr auto;
-    padding-block: clamp(2rem, 6vh, 4rem);
-  }
-
-  .landing-hero {
-    align-self: center;
-    text-align: center;
-  }
-
-  /* :global — these classes land on <Reveal>'s own root element, which
-     carries Reveal.astro's scope hash rather than this file's, so a plain
-     scoped selector here would silently never match. Same story everywhere
-     else below that styles a class passed into <Reveal>. */
-  .landing-hero :global(.landing-name) {
-    font-family: var(--font-compress);
-    /* Sized off the viewport rather than --text-display: this is a wordmark
-       set to span the page, and the tracking below is part of the measurement
-       — seven letters at 0.06em each is nearly half a character of extra
-       width, which the shared display step knows nothing about. */
-    font-size: clamp(3rem, 14vw, 13rem);
-    font-weight: 400;
-    text-transform: uppercase;
-    line-height: 0.9;
-    /* Tracked out, and the trailing space trimmed back off the right edge so
-       the word still reads optically centred. */
-    letter-spacing: 0.06em;
-    margin: 0 0 0 0.06em;
-  }
-
-  /* A phone's gutter eats a far larger share of the card than a desktop's, so
-     the same vw step leaves the wordmark floating in the middle of it. Stepped
-     up here rather than made steeper in the clamp, which would have run the
-     desktop size past the margins. */
-  @media (max-width: 46rem) {
-    .landing-hero :global(.landing-name) {
-      font-size: 19vw;
-    }
-  }
-
-  .landing-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 2rem;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  /* ── shared section heading ─────────────────────────────────── */
-  :global(.section-title) {
-    font-family: var(--font-compress);
-    font-size: var(--text-chapter);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    margin: 0;
-  }
-
-  /* ── S2 achievements — sticky-stacked panels ────────────────── */
-  /* One set of column measures drives the head grid, the body indent and the
-     intro indent, so the index / figure / event / paragraph all land on the
-     same x down the whole section. */
-  .achievements {
-    --col-index: 4.5rem;
-    --col-figure: 9rem;
-    --col-gap: 2rem;
-    --content-indent: calc(var(--col-index) + var(--col-figure) + var(--col-gap) * 2);
-    --head-h: 6.5rem;
-    /* Same thin inline pad the work section uses, so the achievements heading
-       and rows sit on the identical left edge as the project rows do — the
-       84rem centred shell they used before pulled them visibly inward. */
-    --ach-pad: clamp(0.75rem, 1.4vw, 1.5rem);
-  }
-
-  @media (min-width: 860px) {
-    .achievements {
-      --head-h: 7rem;
-    }
-  }
-
-  /* --title-nudge: the headings sit a hair inside the rows' left edge rather
-     than flush with it. Shared with .work-title so the two can't drift. */
-  .achievements-intro {
-    --title-nudge: clamp(0.5rem, 0.9vw, 1rem);
-    padding-block: clamp(4rem, 13vh, 8rem) clamp(2rem, 7vh, 4rem);
-    padding-inline: calc(var(--ach-pad) + var(--title-nudge)) var(--ach-pad);
-  }
-
-  /* Matched to .work-title exactly — same face, same clamp, same fit — so the
-     two section headings read as one system rather than two. Anton ships a
-     single weight, hence 400 rather than a bolder number that would only
-     trigger synthesis. */
-  .achievements-intro :global(.achievements-title) {
-    font-family: var(--font-compress);
-    font-size: clamp(2.25rem, 6.5vw, 5rem);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    line-height: 0.92;
-    margin: 0;
-  }
-
-  .stack {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .stack-item {
-    position: sticky;
-    /* Shifted down by the sticky header's own height (global.css --header-h)
-       — it permanently covers that band of the viewport now, so panel 0's
-       head would render directly underneath it without this. */
-    top: calc(var(--header-h) + var(--i) * var(--head-h));
-  }
-
-  .ach {
-    /* Each panel fills the viewport *below* the header and the heads already
-       stacked above it, so no panel's content is pushed under the fold. */
-    min-height: calc(100svh - var(--header-h) - var(--i) * var(--head-h));
-    display: flex;
-    flex-direction: column;
-    /* Opaque ground is what makes the occlusion read — without it the panel
-       below would show through as this one scrolls over it. The texture rides
-       on top of that ground as background-image layers rather than replacing
-       it, so the occlusion still holds: a halftone field, the same language
-       as the columns down the hero's margins, and a soft lift along the head
-       so each panel reads as catching light where it meets the one above.
-       Both are drawn from --color-text, so they follow the theme. */
-    background-color: var(--color-ground);
-    background-image:
-      radial-gradient(
-        circle at center,
-        color-mix(in srgb, var(--color-text) 11%, transparent) 0.85px,
-        transparent 1.3px
-      ),
-      radial-gradient(
-        85% 55% at 50% 0%,
-        color-mix(in srgb, var(--color-text) 4.5%, transparent),
-        transparent 72%
-      );
-    background-size: 0.75rem 0.75rem, auto;
-    border-top: 1px solid var(--color-rule);
-    padding-inline: var(--ach-pad);
-  }
-
-  .ach-inner {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .ach-head {
-    height: var(--head-h);
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      "index figure year"
-      "event event event";
-    align-items: center;
-    gap: 0.25rem 1.25rem;
-    border-bottom: 1px solid var(--color-rule);
-  }
-
-  @media (min-width: 860px) {
-    .ach-head {
-      grid-template-columns: var(--col-index) var(--col-figure) minmax(0, 1fr) auto;
-      grid-template-areas: "index figure event year";
-      gap: var(--col-gap);
-    }
-  }
-
-  .ach-index {
-    grid-area: index;
-    font-size: clamp(1.125rem, 2.2vw, 1.5rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-
-  .ach-figure {
-    grid-area: figure;
-    font-family: var(--font-mono);
-    font-size: clamp(1.2rem, 2.3vw, 1.75rem);
-    font-weight: 600;
-    color: var(--color-accent);
-    white-space: nowrap;
-  }
-
-  .ach-event {
-    grid-area: event;
-    /* Sized to keep the longest event name on one line inside a fixed-height
-       head — the head height is what the sticky offsets are computed from, so
-       it must not grow. The serif sets wider than the sans it replaced, so the
-       ceiling here is lower than the type scale would otherwise suggest. */
-    font-family: var(--font-compress);
-    font-size: clamp(1.05rem, 2.9vw, 2.125rem);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    line-height: 1.1;
-    margin: 0;
-  }
-
-  .ach-year {
-    grid-area: year;
-    justify-self: end;
-  }
-
-  /* Top-aligned, not centred in the panel: the paragraph has to read as
-     belonging to the head directly above it. The space left below is the
-     region the next panel scrolls over first, so it is never dead for long. */
-  .ach-body {
-    padding-block: clamp(2rem, 8vh, 4.5rem) clamp(2rem, 6vh, 3.5rem);
-  }
-
-  @media (min-width: 860px) {
-    /* Line the paragraph up under the event name, not under the index. */
-    .ach-body {
-      padding-left: var(--content-indent);
-    }
-  }
-
-  .ach-detail {
-    color: var(--color-accent);
-    margin: 0 0 1.25rem;
-  }
-
-  .ach-blurb {
-    margin: 0;
-    max-width: 48ch;
-    font-size: clamp(1.0625rem, 1.35vw, 1.375rem);
-    line-height: 1.5;
-    color: var(--color-muted);
-  }
-
-  /* ── S3 work ─────────────────────────────────────────────────── */
-  /* Full height like the achievements section, but the rows sit at their
-     natural size at the top rather than stretching to fill it — the empty
-     space below is deliberate room for projects that do not exist yet.
-
-     This section deliberately does NOT use .shell: the rows are meant to run
-     almost the full width of the screen, and .shell would cap them at 84rem
-     and centre them. --work-pad is the thin margin left at the edges instead,
-     and the heading hugs the same left edge as the rows rather than sitting
-     on the centred grid the rest of the page uses. */
-  .work-section {
-    --work-pad: clamp(0.75rem, 1.4vw, 1.5rem);
-    /* Grey rather than the flat near-black .dark-panel hands it, lit the same
-       way the landing card is: a soft lift through the middle, falling back to
-       --color-ground at both ends. Ending on the plain ground is what makes
-       the seams with the achievements section above and the about section
-       below disappear — the grey reads as this section catching the light,
-       not as a differently coloured panel butted against two others. */
-    background:
-      radial-gradient(85% 58% at 50% 42%, rgba(242, 241, 237, 0.05), transparent 72%),
-      linear-gradient(
-        180deg,
-        var(--color-ground) 0%,
-        var(--color-ground-deep) 52%,
-        var(--color-ground) 100%
-      );
-    /* A full viewport, not 100svh minus the header: the header hides as soon as
-       you scroll down, so subtracting its height here only guaranteed a strip of
-       the next section showing at the bottom. Nothing is lost underneath the
-       header when it is shown — the top padding already clears it. */
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding-block: clamp(4rem, 13vh, 8rem) clamp(3rem, 10vh, 6rem);
-    padding-inline: var(--work-pad);
-  }
-
-  .work-inner {
-    width: 100%;
-  }
-
-  /* Title left, lede held to a column on the right — at full width a plain
-     space-between would fling the lede to the far edge of a wide screen. */
-  .work-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
-    align-items: start;
-    gap: 2rem;
-    margin-bottom: clamp(3rem, 12vh, 7rem);
-  }
-
-  .work-head :global(.work-title) {
-    padding-left: clamp(0.5rem, 0.9vw, 1rem);
-    font-family: var(--font-compress);
-    font-size: clamp(2.25rem, 6.5vw, 5rem);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    line-height: 0.92;
-    margin: 0;
-  }
-
-  .work-lede-copy {
-    margin: 0;
-    max-width: 34ch;
-    justify-self: end;
-    /* Body face at body size: it has to read as prose beside the headline,
-       which .meta's caption sizing would not. */
-    font-family: var(--font-sans);
-    font-size: 1rem;
-    line-height: 1.45;
-    color: var(--color-muted);
-  }
-
-  @media (max-width: 54rem) {
-    .work-head {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .work-lede-copy {
-      justify-self: start;
-    }
-  }
-
-  .proj-rows {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .proj-link {
-    position: relative;
-    display: grid;
-    align-items: center;
-    /* meta | thumb | title | arrow, with the CTA on a second row under the
-       title. The thumb column is 0 until hover, which is what slides the
-       title across as the panel arrives. */
-    grid-template-columns: minmax(0, var(--meta-col)) auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      "meta thumb title icon"
-      "meta thumb cta   icon";
-    column-gap: clamp(0.85rem, 1.6vw, 1.5rem);
-    /* Minimal inline padding so the row's text starts almost at the screen
-       edge and the slab runs nearly the full width behind it. */
-    padding: clamp(1rem, 2.4vh, 1.45rem) clamp(0.6rem, 1vw, 0.9rem);
-    border-top: 1px solid var(--color-rule);
-    color: inherit;
-    isolation: isolate;
-    /* Clips the skewed slab's slanted ends, and rounds the panel with it. */
-    overflow: hidden;
-    border-radius: 0.5rem;
-    transition: padding 480ms cubic-bezier(0.4, 0, 0.2, 1);
-    --meta-col: 13rem;
-  }
-
-  .proj:last-child .proj-link {
-    border-bottom: 1px solid var(--color-rule);
-  }
-
-  /* The fill, and the first half of what distinguishes this section from the
-     header's radial one: a *skewed* slab that sweeps in from the left, so the
-     leading edge arrives on a diagonal and the row reads as being struck
-     rather than filled. Over-wide and over-tall so the slanted ends never
-     expose a corner; .proj-link's overflow does the clipping. */
-  .proj-panel {
-    position: absolute;
-    inset: -1px -12%;
-    z-index: -1;
-    /* A veil of the text colour rather than the text colour itself. Filling
-       solid inverted the row to full cream, which on a grey section read as a
-       hole punched in the page rather than as a row lifting off it. At a
-       tenth it lands a couple of steps above the ground — enough that the
-       skewed leading edge is unmistakable, not so much that the row stops
-       belonging to the section. */
-    background: color-mix(in srgb, var(--color-text) 10%, transparent);
-    /* Just past its own width — enough to sit fully off the left edge, and no
-       further. Over-travelling spends the first third of the duration moving
-       through nothing, which reads as lag before the slab appears. */
-    transform: translateX(-101%) skewX(-9deg);
-    transition: transform 620ms cubic-bezier(0.5, 0.05, 0.25, 1);
-  }
-
-  .proj-meta {
-    grid-area: meta;
-    transition: color 260ms ease 120ms;
-  }
-
-  /* Width, not opacity: the column has to actually open up and push the title
-     across, which is the movement that sells the row expanding. */
-  .proj-thumb {
-    grid-area: thumb;
-    width: 0;
-    overflow: hidden;
-    border-radius: 0.25rem;
-    transition:
-      width 520ms cubic-bezier(0.62, 0.04, 0.3, 1),
-      opacity 300ms ease 140ms;
-    opacity: 0;
-  }
-
-  .proj-thumb img {
-    width: 11rem;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
-    display: block;
-  }
-
-  .proj-title {
-    grid-area: title;
-    font-family: var(--font-compress);
-    font-size: clamp(1.35rem, 3.2vw, 2.5rem);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    line-height: 1.02;
-    margin: 0;
-  }
-
-  /* The second half of the effect: every letter is two stacked copies, a dark
-     one sitting in place and a light one waiting below. On hover both rise by
-     exactly one line, so the title doesn't fade or recolour — each glyph rolls
-     over to its light twin, left to right, just behind the slab's edge. */
-  .ch {
-    display: inline-block;
-    position: relative;
-    overflow: hidden;
-    vertical-align: top;
-  }
-
-  .ch-space {
-    display: inline-block;
-  }
-
-  .ch-a,
-  .ch-b {
-    display: block;
-    transition: transform 600ms cubic-bezier(0.62, 0.04, 0.3, 1);
-    /* Staggered off the character's index, so the roll chases the slab across
-       the row rather than flipping the whole word at once. */
-    /* Capped: a 29-character title would otherwise put the last glyph 700ms
-       behind the first and take 1.3s to settle. The cap keeps every title,
-       short or long, finished inside ~0.9s while preserving the stagger. */
-    transition-delay: min(calc(var(--c) * 26ms), 320ms);
-  }
-
-  .ch-b {
-    position: absolute;
-    inset: 0;
-    transform: translateY(100%);
-    /* The light copy used to be the ground colour, which only worked because
-       the slab behind it was solid cream. Against a grey slab it would be
-       invisible, so the roll lands on the accent instead — the glyphs still
-       change as they turn over, in the one colour the rest of the site
-       already uses to mark something. */
-    color: var(--color-accent);
-  }
-
-  /* global.css zeroes transition *duration* under reduced motion but not
-     delay, which would otherwise leave the letters trickling over one by one
-     on a stagger that no longer has any motion to justify it. */
-  @media (prefers-reduced-motion: reduce) {
-    .ch-a,
-    .ch-b {
-      transition-delay: 0s;
-    }
-  }
-
-  .proj-icon {
-    grid-area: icon;
-    justify-self: end;
-    font-size: 1.15rem;
-    color: var(--color-muted);
-    transition: color 260ms ease 120ms, transform 380ms ease;
-  }
-
-  /* max-height rather than a 0fr/1fr grid row: universally supported, and the
-     row only ever holds one line so the ceiling is easy to bound honestly. */
-  .proj-cta {
-    grid-area: cta;
-    justify-self: start;
-    max-height: 0;
-    margin-top: 0;
-    opacity: 0;
-    overflow: hidden;
-    transform: translateY(0.4rem);
-    border: 1px solid transparent;
-    border-radius: 0.3rem;
-    transition:
-      max-height 420ms cubic-bezier(0.4, 0, 0.2, 1),
-      margin-top 420ms cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 260ms ease 200ms,
-      transform 380ms ease 200ms,
-      padding 420ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Hover only where there is a real pointer; keyboard focus gets the same
-     treatment through :focus-visible so the row is not a dead end for it. */
-  @media (hover: hover) and (pointer: fine) {
-    .proj-link:hover,
-    .proj-link:focus-visible {
-      padding-block: clamp(1.6rem, 4vh, 2.5rem);
-    }
-
-    .proj-link:hover .proj-panel,
-    .proj-link:focus-visible .proj-panel {
-      transform: translateX(0) skewX(-9deg);
-    }
-
-    .proj-link:hover .ch-a,
-    .proj-link:focus-visible .ch-a {
-      transform: translateY(-100%);
-    }
-
-    .proj-link:hover .ch-b,
-    .proj-link:focus-visible .ch-b {
-      transform: translateY(0);
-    }
-
-    .proj-link:hover .proj-thumb,
-    .proj-link:focus-visible .proj-thumb {
-      width: 11rem;
-      opacity: 1;
-    }
-
-    /* The title is deliberately absent here — its letters carry their own
-       light copy and roll to it, so recolouring the element would flip the
-       half that hasn't rolled yet. */
-    .proj-link:hover .proj-meta,
-    .proj-link:focus-visible .proj-meta,
-    .proj-link:hover .proj-icon,
-    .proj-link:focus-visible .proj-icon {
-      color: var(--color-text);
-    }
-
-    .proj-link:hover .proj-icon,
-    .proj-link:focus-visible .proj-icon {
-      transform: translate(0.15rem, -0.15rem);
-    }
-
-    .proj-link:hover .proj-cta,
-    .proj-link:focus-visible .proj-cta {
-      max-height: 3rem;
-      margin-top: 0.9rem;
-      padding: 0.45rem 0.85rem;
-      opacity: 1;
-      transform: translateY(0);
-      color: var(--color-text);
-      border-color: color-mix(in srgb, var(--color-text) 26%, transparent);
-    }
-  }
-
-  @media (max-width: 54rem) {
-    .proj-link {
-      --meta-col: 7.5rem;
-      grid-template-columns: minmax(0, var(--meta-col)) auto minmax(0, 1fr) auto;
-    }
-    .proj-thumb img {
-      width: 6.5rem;
-    }
-    .proj-link:hover .proj-thumb,
-    .proj-link:focus-visible .proj-thumb {
-      width: 6.5rem;
-    }
-  }
-
-  /* Below this the meta and the title cannot share a line without the title
-     shrinking past legibility, so the row stacks and the thumb drops out. */
-  @media (max-width: 34rem) {
-    .proj-link {
-      grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-areas:
-        "meta icon"
-        "title title"
-        "cta   cta";
-      row-gap: 0.4rem;
-    }
-    .proj-thumb {
-      display: none;
-    }
-  }
-
-  .all-work {
-    display: inline-block;
-    margin-top: clamp(2rem, 5vh, 3rem);
-  }
-
-  /* ── S4 about ────────────────────────────────────────────────── */
-  .about-grid {
-    display: grid;
-    gap: 2rem;
-    align-items: center;
-  }
-
-  @media (min-width: 800px) {
-    .about-grid {
-      grid-template-columns: auto 1fr;
-      gap: 3.5rem;
-    }
-  }
-
-  .about-portrait {
-    width: 9rem;
-    aspect-ratio: 1 / 1;
-  }
-
-  .about-portrait img {
-    object-fit: cover;
-  }
-
-  .about-copy :global(.about-kicker) {
-    font-family: var(--font-mono);
-    font-size: var(--text-meta);
-    color: var(--color-accent);
-    margin: 0 0 0.5rem;
-  }
-
-  .about-copy :global(.about-name) {
-    font-family: var(--font-compress);
-    font-size: var(--text-hero);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    line-height: 0.92;
-    margin: 0;
-  }
-
-  .about-copy :global(.about-statement) {
-    margin: 1.25rem 0 0;
-    max-width: 42ch;
-    color: var(--color-muted);
-  }
-
-  .about-row {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    margin-top: 2rem;
-  }
-
-  .tag {
-    padding: 0.35rem 0.65rem;
-    border: 1px solid var(--color-rule);
-    border-radius: 0.25rem;
-  }
-
-  /* ── S5 capabilities marquee ─────────────────────────────────── */
-  .capabilities-section {
-    border-block: 1px solid var(--color-rule);
-    padding-block: clamp(2rem, 6vh, 3rem);
-    overflow: hidden;
-    display: grid;
-    gap: 1.25rem;
-  }
-
-  .marquee-row {
-    overflow: hidden;
-  }
-
-  .marquee-track {
-    display: flex;
-    width: max-content;
-    gap: 2.5rem;
-    color: var(--color-muted);
-    white-space: nowrap;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .marquee-left {
-      animation: marquee-left 40s linear infinite;
-    }
-    .marquee-right {
-      animation: marquee-right 40s linear infinite;
-    }
-  }
-
-  @keyframes marquee-left {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-
-  @keyframes marquee-right {
-    from { transform: translateX(-50%); }
-    to { transform: translateX(0); }
-  }
-
-  /* ── S6 outro ────────────────────────────────────────────────── */
-  .outro {
-    align-items: stretch;
-  }
-
-  .outro-inner {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: clamp(1.5rem, 4vh, 2.5rem);
-    padding-block: clamp(3rem, 10vh, 5rem);
-    min-height: 100%;
-  }
-
-  .outro :global(.outro-line) {
-    font-family: var(--font-compress);
-    font-size: var(--text-hero);
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    line-height: 0.92;
-    margin: 0;
-  }
-
-  .outro-email {
-    display: inline-block;
-    width: fit-content;
-    font-family: var(--font-mono);
-    font-size: clamp(1.25rem, 3vw, 2rem);
-    background-image: linear-gradient(var(--color-muted), var(--color-muted));
-    background-repeat: no-repeat;
-    background-position: 0 100%;
-    background-size: 100% 1px;
-    padding-bottom: 0.2em;
-    transition: background-size 200ms ease, background-image 200ms ease, color 200ms ease;
-  }
-
-  .outro-email:hover,
-  .outro-email:focus-visible {
-    background-image: linear-gradient(var(--color-accent), var(--color-accent));
-    background-size: 100% 2px;
-    color: var(--color-accent);
-  }
-
-  .outro-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem 2rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .outro-footer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 2rem;
-    justify-content: space-between;
-    border-top: 1px solid var(--color-rule);
-    padding-top: 1.5rem;
-    margin-top: clamp(2rem, 6vh, 3rem);
-  }
-</style>
+      <div class="loading-fallback" id="loading-fallback" hidden>The world couldn’t load. <a href={withBase('/work')}>Browse the projects instead →</a></div>
+    </main>
+    <dialog class="inventory" id="portfolio-dialog" aria-labelledby="panel-title">
+      <div class="inventory-top"><span class="panel-icon" id="panel-icon"><PixelIcon name="chest"/></span><h2 id="panel-title">Project chest</h2><span class="panel-hint">Esc to return</span><button class="close-button icon-button" id="close-panel" aria-label="Close and return to world"><PixelIcon name="close"/></button></div>
+      <section class="panel-content" data-panel="projects" aria-label="Projects">
+        <div class="project-inventory">
+          <div class="project-list" role="tablist" aria-label="Select a project" aria-orientation="vertical">
+            {projects.map((p,i) => <button class:list={['project-slot',{'selected':i===0}]} id={`tab-${p.id}`} role="tab" aria-controls={`detail-${p.id}`} aria-selected={i===0 ? 'true':'false'} tabindex={i===0?0:-1} data-project={p.id}><span class={`project-item item-${i}`}><PixelIcon name={projectIcons[i]??'gem'}/></span><span><strong>{p.data.title}</strong><small>{p.data.category}</small></span><span class="project-select-arrow" aria-hidden="true">›</span></button>)}
+            <p class="inventory-note">3 real builds.<br/>Each with a story behind it.</p>
+            <a class="plain-link all-projects" href={withBase('/work')}>View all case studies ↗</a>
+          </div>
+          <div class="project-details">
+            {projects.map((p,i) => <article id={`detail-${p.id}`} role="tabpanel" aria-labelledby={`tab-${p.id}`} class="project-detail" hidden={i!==0} tabindex="0"><div class={`project-art art-${i}`} aria-hidden="true"><PixelIcon name={projectIcons[i]??'gem'}/><span>{i===0?'RULES THAT HOLD.':i===1?'DEFEND BY DESIGN.':'FOLLOW THE SOURCE.'}</span><span class="art-pixels"></span></div><div class="project-heading"><h3>{p.data.title}</h3><span>{p.data.year}</span></div><p class="project-summary">{p.data.summary}</p><p class="project-role">{p.data.role}{p.data.team ? ` · ${p.data.team}` : ''}</p><ul class="stack-tags" aria-label="Technology stack">{p.data.stack.map(s=><li>{s}</li>)}</ul><div class="project-links"><a class="pixel-button primary" href={withBase(`/work/${p.id}`)}>Explore the build <PixelIcon name="arrow"/></a>{p.data.links.repo && <a class="plain-link" href={p.data.links.repo} target="_blank" rel="noopener noreferrer">Source code ↗</a>}{p.data.links.live && <a class="plain-link" href={p.data.links.live} target="_blank" rel="noopener noreferrer">Live project ↗</a>}</div></article>)}
+          </div>
+        </div>
+      </section>
+      <section class="panel-content text-panel" data-panel="about" hidden>
+        <div class="about-layout"><div class="portrait-frame"><img src={withBase('/assets/portrait.jpg')} alt="Arihant Jain" width="400" height="500" loading="lazy"/><span>Player one: Arihant</span></div><div><h3>Curiosity is my crafting recipe.</h3><p>{person.statement}</p><p>I’m a {person.degree} undergraduate at {person.school} ({person.span}), based in {person.location}.</p><p>I care about where a system enforces its rules: in ARC’s database, in SentinelsAI’s deterministic fixes, and in a research pipeline’s source-backed reports.</p><div class="about-actions"><a class="pixel-button primary" href={withBase('/assets/resume.pdf')} target="_blank" rel="noopener">Read my résumé <PixelIcon name="arrow"/></a><a class="plain-link" href={withBase('/about')}>More about me ↗</a></div></div></div>
+      </section>
+      <section class="panel-content text-panel" data-panel="skills" hidden>
+        <h3>The tools in my inventory.</h3><p class="panel-lede">Different problems, different tools. Here’s what I build with.</p><div class="skill-groups">{skills.map(g=><div class="skill-group"><h4>{g.group}</h4><ul>{g.items.map(s=><li>{s}</li>)}</ul></div>)}</div>
+      </section>
+      <section class="panel-content text-panel" data-panel="achievements" hidden>
+        <h3>A few checkpoints along the way.</h3><div class="achievement-list">{achievements.map(a=><article><span class="achievement-value">{a.prefix}{a.value}{a.suffix}</span><div><h4>{a.event}</h4><p>{a.detail}</p></div><span class="achievement-year">{a.year}</span></article>)}</div><p class="panel-lede">Still exploring. Still building.</p>
+      </section>
+      <section class="panel-content text-panel" data-panel="contact" hidden>
+        <div class="contact-art" aria-hidden="true"><PixelIcon name="mail"/><span class="contact-spark">+</span></div><h3>Got something worth building?</h3><p class="panel-lede">I’m looking for internships and opportunities in backend, infrastructure, and applied AI engineering. Let’s talk.</p><a class="contact-email" href={links.email}>{person.email} <span aria-hidden="true">↗</span></a><div class="contact-links"><a class="pixel-button primary" href={links.email}>Send an email <PixelIcon name="arrow"/></a><button class="text-button" id="copy-email" data-email={person.email}>Copy address</button><a class="plain-link" href={links.github} target="_blank" rel="noopener noreferrer">GitHub ↗</a><a class="plain-link" href={links.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a><a class="plain-link" href={links.x} target="_blank" rel="noopener noreferrer">X ↗</a></div><p class="contact-location"><span class="status-dot"></span>{person.location}</p>
+      </section>
+      <section class="panel-content text-panel" data-panel="help" hidden>
+        <h3>A small world. Yours to explore.</h3><p class="panel-lede">Walk up to a landmark and interact to discover what’s inside. You can also open any section from the hotbar.</p><dl class="help-keys"><div><dt><kbd>W A S D</kbd> or <kbd>↑ ← ↓ →</kbd></dt><dd>Move around the world</dd></div><div><dt><kbd>E</kbd> or <kbd>Enter</kbd></dt><dd>Open the nearby landmark</dd></div><div><dt><kbd>1</kbd> to <kbd>5</kbd></dt><dd>Open a portfolio section instantly</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the inventory and return</dd></div><div><dt>Mouse / touch</dt><dd>Click or tap the ground to walk. Tap a landmark to open it.</dd></div></dl><p>On a phone, use the directional pad and the Interact button. Sound effects are optional and off by default.</p><a class="plain-link" href={withBase('/work')}>Prefer a traditional portfolio? Browse the case studies ↗</a>
+      </section>
+      <div class="inventory-footer"><span><span class="status-dot"></span><span id="inventory-status">Found in the builder’s grove</span></span><span>Arihant’s inventory</span></div>
+    </dialog>
+    <section id="direct-portfolio" class="direct-portfolio" aria-label="Readable portfolio">
+      <h2>{person.name}</h2><p>{person.statement}</p><p>{person.degree} · {person.school} · {person.span} · {person.location}</p>
+      <h3>Projects</h3>{projects.map(p=><article><h4><a href={withBase(`/work/${p.id}`)}>{p.data.title}</a></h4><p>{p.data.summary}</p><p>{p.data.stack.join(' · ')}</p>{p.data.links.repo&&<a href={p.data.links.repo}>Source code ↗</a>}</article>)}
+      <h3>Skills</h3>{skills.map(g=><p><strong>{g.group}: </strong>{g.items.join(', ')}</p>)}
+      <h3>Milestones</h3>{achievements.map(a=><p>{a.prefix}{a.value}{a.suffix} · {a.event} ({a.year}) · {a.detail}</p>)}
+      <h3>Get in touch</h3><p><a href={links.email}>{person.email}</a> · <a href={links.github}>GitHub</a> · <a href={links.linkedin}>LinkedIn</a> · <a href={links.x}>X</a> · <a href={withBase('/assets/resume.pdf')}>Résumé</a></p><a class="pixel-button" href={withBase('/')}>Return to the world</a>
+    </section>
+    <script>import '../scripts/world';</script>
+  </body>
+</html>
