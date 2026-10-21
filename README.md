@@ -1,52 +1,38 @@
-# arihantjain — portfolio
+# Arihant Jain — Woodland Workshop
 
-Personal portfolio for Arihant Jain. Astro 5 · TypeScript · Tailwind 4 · static ·
-deployed on Cloudflare Pages.
+A playable 2D pixel-world portfolio. Walk through a forest settlement, open a golden chest, and inspect Arihant's real projects. The homepage is original Canvas artwork with accessible HTML inventories; existing case studies, about content, source links, and résumé remain available.
 
-Design decisions live in **[DESIGN.md](./DESIGN.md)**. Structure and build order
-live in **[PLAN.md](./PLAN.md)**. The brief is **[SPEC.md](./SPEC.md)**.
+## Run locally
 
-**Phase 1** — the complete static site, zero client JavaScript. *Done.*
-**Phase 2** — Lenis smooth scroll and chapter choreography, on `/` only. *Done.*
-**Phase 3** — hero entrance, Chapter II scale-and-settle, proof count-up. *Done.*
+```bash
+npm ci
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4323
+```
 
-Scroll motion lives in `src/scripts/motion.ts`, imported by `src/pages/index.astro`
-alone — every other route still ships zero client JavaScript. The hero entrance is a CSS
-animation armed by an inline script before first paint, so it does not wait on that
-bundle and completes even if the bundle fails. Under `prefers-reduced-motion: reduce`
-nothing is armed and Lenis and GSAP are never fetched at all.
+Open **http://127.0.0.1:4323/Portfolio/**. For development, use `npm run dev`; the default base path is `/Portfolio/`. `npm run check` checks Astro and TypeScript.
+
+## Controls
+
+- **WASD / arrows:** walk; **E / Enter:** interact near a landmark.
+- **Click / tap:** walk to a point or a landmark. Paths avoid obstacles.
+- **1–5 / hotbar:** open About, Projects, Skills, Milestones, or Contact directly.
+- **Escape:** close the inventory. Project tabs support arrow keys, Home, and End.
+- Phones have a directional pad and an Interact button. Sound effects are off by default; a header toggle changes golden hour to night.
+- The first keyboard link opens a readable portfolio. The same HTML is available without JavaScript.
+
+## Source map
+
+- `src/game/art.ts`: deterministic original terrain, landmarks, sprites, depth, and lighting.
+- `src/scripts/world.ts`: movement, pathfinding, camera, interaction, optional local sound, and inventory behavior.
+- `src/styles/world.css`: homepage and inventory system. `src/components/PixelIcon.astro`: original icons.
+- `src/config/site.ts` and `src/content/work/*.mdx`: canonical personal and project content.
+- `DESIGN.md`, `.impeccable/design.json`: extracted shipped design system.
+- `docs/QA.md`, `docs/ASSETS.md`: verification and origins. Legacy visual record: `docs/legacy-design.md`.
+
+The redraw is isolated on `codex/pixel-world-portfolio`. The GitHub Pages workflow only deploys `main`; reviewing this branch does not change production. No paid APIs, purchases, accounts, or game assets are required.
 
 ---
-
-## Develop
-
-```bash
-npm install
-npm run dev        # http://localhost:4321
-npm run build      # → dist/
-npm run preview    # serve dist/
-npm run check      # astro check — must stay at 0 errors
-```
-
-### View it on your phone
-
-The site is built mobile-first and a 40-second phone scan is the primary use case,
-so check it on a real handset rather than a narrow browser window.
-
-```bash
-npm run dev:host   # binds the dev server to the LAN, not just localhost
-```
-
-Astro prints a **Network** address alongside the local one — something like
-`http://192.168.1.7:4321/`. Open that on the phone, with both devices on the same
-Wi-Fi. Edits hot-reload on the phone too.
-
-- If no Network address appears, or the phone times out, Windows Firewall is
-  usually blocking it: allow Node.js on **private** networks when prompted.
-- `npm run preview:host` does the same for the built output in `dist/`, which is
-  what actually ships — use it for a final look.
-- Not on the same network? `npx cloudflared tunnel --url http://localhost:4321`
-  prints a temporary public URL that works from anywhere.
 
 ## Deploy
 

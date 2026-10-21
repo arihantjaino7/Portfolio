@@ -6,3 +6,8 @@ dist/
 *.log
 .env
 .env.production
+
+# Local design captures; the review verdict is tracked.
+.impeccable/review/*.jpg
+.impeccable/review/*.png
+.impeccable/direction.md

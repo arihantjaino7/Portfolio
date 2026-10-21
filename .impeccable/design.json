@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-21T07:01:31.855761+00:00",
+  "title": "Design System: Arihant\u2019s Woodland Workshop",
+  "extensions": {
+    "colorMeta": {
+      "pine": {
+        "role": "neutral",
+        "displayName": "Pine",
+        "tonalRamp": [
+          "oklch(15.00% 0.0313 171.30)",
+          "oklch(26.43% 0.0313 171.30)",
+          "oklch(37.86% 0.0313 171.30)",
+          "oklch(49.29% 0.0313 171.30)",
+          "oklch(60.71% 0.0313 171.30)",
+          "oklch(72.14% 0.0313 171.30)",
+          "oklch(83.57% 0.0313 171.30)",
+          "oklch(95.00% 0.0313 171.30)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "tonalRamp": [
+          "oklch(15.00% 0.0325 166.65)",
+          "oklch(26.43% 0.0325 166.65)",
+          "oklch(37.86% 0.0325 166.65)",
+          "oklch(49.29% 0.0325 166.65)",
+          "oklch(60.71% 0.0325 166.65)",
+          "oklch(72.14% 0.0325 166.65)",
+          "oklch(83.57% 0.0325 166.65)",
+          "oklch(95.00% 0.0325 166.65)"
+        ]
+      },
+      "deep": {
+        "role": "neutral",
+        "displayName": "Deep",
+        "tonalRamp": [
+          "oklch(15.00% 0.0270 175.07)",
+          "oklch(26.43% 0.0270 175.07)",
+          "oklch(37.86% 0.0270 175.07)",
+          "oklch(49.29% 0.0270 175.07)",
+          "oklch(60.71% 0.0270 175.07)",
+          "oklch(72.14% 0.0270 175.07)",
+          "oklch(83.57% 0.0270 175.07)",
+          "oklch(95.00% 0.0270 175.07)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.0443 148.18)",
+          "oklch(26.43% 0.0443 148.18)",
+          "oklch(37.86% 0.0443 148.18)",
+          "oklch(49.29% 0.0443 148.18)",
+          "oklch(60.71% 0.0443 148.18)",
+          "oklch(72.14% 0.0443 148.18)",
+          "oklch(83.57% 0.0443 148.18)",
+          "oklch(95.00% 0.0443 148.18)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "tonalRamp": [
+          "oklch(15.00% 0.0257 94.74)",
+          "oklch(26.43% 0.0257 94.74)",
+          "oklch(37.86% 0.0257 94.74)",
+          "oklch(49.29% 0.0257 94.74)",
+          "oklch(60.71% 0.0257 94.74)",
+          "oklch(72.14% 0.0257 94.74)",
+          "oklch(83.57% 0.0257 94.74)",
+          "oklch(95.00% 0.0257 94.74)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.0366 126.63)",
+          "oklch(26.43% 0.0366 126.63)",
+          "oklch(37.86% 0.0366 126.63)",
+          "oklch(49.29% 0.0366 126.63)",
+          "oklch(60.71% 0.0366 126.63)",
+          "oklch(72.14% 0.0366 126.63)",
+          "oklch(83.57% 0.0366 126.63)",
+          "oklch(95.00% 0.0366 126.63)"
+        ]
+      },
+      "gold": {
+        "role": "primary",
+        "displayName": "Gold",
+        "tonalRamp": [
+          "oklch(15.00% 0.1087 83.59)",
+          "oklch(26.43% 0.1087 83.59)",
+          "oklch(37.86% 0.1087 83.59)",
+          "oklch(49.29% 0.1087 83.59)",
+          "oklch(60.71% 0.1087 83.59)",
+          "oklch(72.14% 0.1087 83.59)",
+          "oklch(83.57% 0.1087 83.59)",
+          "oklch(95.00% 0.1087 83.59)"
+        ]
+      },
+      "gold-dark": {
+        "role": "primary",
+        "displayName": "Gold Dark",
+        "tonalRamp": [
+          "oklch(15.00% 0.0960 70.53)",
+          "oklch(26.43% 0.0960 70.53)",
+          "oklch(37.86% 0.0960 70.53)",
+          "oklch(49.29% 0.0960 70.53)",
+          "oklch(60.71% 0.0960 70.53)",
+          "oklch(72.14% 0.0960 70.53)",
+          "oklch(83.57% 0.0960 70.53)",
+          "oklch(95.00% 0.0960 70.53)"
+        ]
+      },
+      "mint": {
+        "role": "secondary",
+        "displayName": "Mint",
+        "tonalRamp": [
+          "oklch(15.00% 0.0996 136.28)",
+          "oklch(26.43% 0.0996 136.28)",
+          "oklch(37.86% 0.0996 136.28)",
+          "oklch(49.29% 0.0996 136.28)",
+          "oklch(60.71% 0.0996 136.28)",
+          "oklch(72.14% 0.0996 136.28)",
+          "oklch(83.57% 0.0996 136.28)",
+          "oklch(95.00% 0.0996 136.28)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "World display",
+        "purpose": "Welcome heading."
+      },
+      "body": {
+        "displayName": "Reading text",
+        "purpose": "Project summaries and explanatory content."
+      }
+    },
+    "shadows": [
+      {
+        "name": "control-ambient",
+        "value": "0 4px 16px #071b1940",
+        "purpose": "Pixel buttons."
+      },
+      {
+        "name": "hud-ambient",
+        "value": "0 6px 25px #081c1955",
+        "purpose": "Hotbar."
+      },
+      {
+        "name": "inventory",
+        "value": "0 28px 80px #051b16b3",
+        "purpose": "Modal separation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control",
+        "value": "background 0.15s, transform 0.15s",
+        "purpose": "Button states."
+      },
+      {
+        "name": "inventory-entry",
+        "value": "0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Inventory entry; disabled with reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1500px"
+      },
+      {
+        "name": "intermediate",
+        "value": "1050px"
+      },
+      {
+        "name": "mobile",
+        "value": "760px"
+      },
+      {
+        "name": "narrow",
+        "value": "360px"
+      },
+      {
+        "name": "compact-desktop-height",
+        "value": "max-height: 700px and min-width: 761px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Beveled pixel action from the homepage.",
+      "html": "<button class=\"ds-button-primary\">Explore the build</button>",
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;gap:22px;min-height:46px;padding:12px 20px;font-size:19px;line-height:1;border:1px solid #77925b;border-top:3px solid #90aa6d;border-bottom:3px solid #0e2119;box-shadow:0 4px 16px #071b1940;transition:background .15s,transform .15s;font-family:var(--pixel,\"Pixelify Sans\",sans-serif);border-radius:0;color:var(--text,#f2edda);cursor:pointer;background:var(--gold,#efc777);color:#253421;border-color:#b28a4f;border-top-color:#ffe5a6;border-bottom-color:#a5753b;}.ds-button-primary:hover{filter:brightness(1.08);transform:translateY(-2px)}.ds-button-primary:active{transform:translateY(1px)}.ds-button-primary:focus-visible{outline:3px solid var(--gold,#efc777);outline-offset:5px}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Beveled pixel action from the homepage.",
+      "html": "<button class=\"ds-button-secondary\">Explore the build</button>",
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;gap:22px;min-height:46px;padding:12px 20px;font-size:19px;line-height:1;border:1px solid #77925b;border-top:3px solid #90aa6d;border-bottom:3px solid #0e2119;box-shadow:0 4px 16px #071b1940;transition:background .15s,transform .15s;font-family:var(--pixel,\"Pixelify Sans\",sans-serif);border-radius:0;color:var(--text,#f2edda);cursor:pointer;background:#2f4935;}.ds-button-secondary:hover{filter:brightness(1.08);transform:translateY(-2px)}.ds-button-secondary:active{transform:translateY(1px)}.ds-button-secondary:focus-visible{outline:3px solid var(--gold,#efc777);outline-offset:5px}"
+    },
+    {
+      "name": "Hotbar slot",
+      "kind": "nav",
+      "refersTo": "hotbar-slot",
+      "description": "Direct section access; hover and active share their treatment.",
+      "html": "<button class=\"ds-hotbar\" aria-label=\"Projects\"><svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" shape-rendering=\"crispEdges\" aria-hidden=\"true\"><path d=\"M2 5h12v9H2z\"/><path d=\"M2 5V3h12v2M2 8h12M4 3v11M12 3v11\"/><path d=\"M7 7h2v4H7z\"/></svg><span>Projects</span></button>",
+      "css": ".ds-hotbar{font-family:var(--pixel,\"Pixelify Sans\",sans-serif);border-radius:0;color:var(--text,#f2edda);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:67px;height:70px;padding:11px 5px 3px;border:2px solid #516345;border-top-color:#6e7f56;border-left-color:#637951;background:#304733;color:#c8d6af;font-size:12px;transition:background .15s,transform .2s}.ds-hotbar svg{width:27px;height:27px;color:var(--gold,#efc777)}.ds-hotbar:hover,.ds-hotbar.active{color:#ffdc8b;border-color:#d1b372;background:#536344;transform:translateY(-3px)}.ds-hotbar:focus-visible{outline:3px solid var(--gold,#efc777);outline-offset:5px}"
+    },
+    {
+      "name": "Project slot",
+      "kind": "button",
+      "refersTo": "project-slot",
+      "description": "Inventory project selector; selection uses a gold border.",
+      "html": "<button class=\"ds-project\"><span class=\"ds-item\"><svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" shape-rendering=\"crispEdges\" aria-hidden=\"true\"><path d=\"M2 5h12v9H2z\"/><path d=\"M2 5V3h12v2M2 8h12M4 3v11M12 3v11\"/><path d=\"M7 7h2v4H7z\"/></svg></span><strong>ARC</strong></button>",
+      "css": ".ds-project{font-family:var(--pixel,\"Pixelify Sans\",sans-serif);border-radius:0;color:var(--text,#f2edda);cursor:pointer;display:flex;gap:12px;align-items:center;text-align:left;width:100%;padding:12px 10px;background:#263e2e;border:1px solid #5d704b;min-height:84px}.ds-project strong{font-size:18px;font-weight:400;line-height:1.05}.ds-item{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#152e24;border:1px solid #74865a}.ds-item svg{width:26px;height:26px;color:var(--gold,#efc777)}.ds-project:hover{background:#3b5137}.ds-project.selected{background:#465538;border-color:var(--gold,#efc777)}.ds-project:focus-visible{outline:3px solid var(--gold,#efc777);outline-offset:5px}"
+    },
+    {
+      "name": "Stack tag",
+      "kind": "chip",
+      "refersTo": "stack-tag",
+      "description": "Noninteractive technology label, without fabricated states.",
+      "html": "<span class=\"ds-tag\">TypeScript</span>",
+      "css": ".ds-tag{display:inline-block;font-family:var(--body,Manrope,system-ui,sans-serif);font-size:9px;border:1px solid #72815b88;padding:5px 8px;color:#d1dbbe}"
+    },
+    {
+      "name": "Inventory surface",
+      "kind": "card",
+      "refersTo": "inventory",
+      "description": "Square framed portfolio surface; modal behavior remains the native dialog\u2019s responsibility.",
+      "html": "<section class=\"ds-inventory\"><header class=\"ds-inventory-head\">Project chest</header><div class=\"ds-inventory-body\">Real engineering work, ready to inspect.</div></section>",
+      "css": ".ds-inventory{background:var(--panel,#20362d);color:var(--text,#f2edda);border:3px solid #8b9972;border-top-color:#b3bea0;border-bottom-color:#4f6549;box-shadow:0 28px 80px #051b16b3}.ds-inventory-head{padding:14px 22px;background:#182e25;border-bottom:1px solid #6f8055;font-family:var(--pixel,\"Pixelify Sans\",sans-serif);font-size:25px}.ds-inventory-body{padding:30px;font-family:var(--body,Manrope,system-ui,sans-serif);font-size:14px;line-height:1.9}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Woodland workshop",
+    "overview": "The Woodland workshop is a small inhabited pixel world: dark pine surrounds, amber treasure, square inventory surfaces, and original procedural scenery. Crisp game lettering identifies places and actions; a quiet sans-serif keeps real project descriptions readable.\n\nThis system governs the homepage and its inventory, direct-reading fallback, and controls. It is extracted from the finished build, not an approved static comp. Existing /work, /work/[slug], /about, and /404 documents retain Base.astro and global.css; their earlier design record is preserved in docs/legacy-design.md. Do not treat this homepage system as an automatic migration of those routes.",
+    "keyCharacteristics": [
+      "Original code-native pixel scenery and authored SVG icons.",
+      "Square layered forest surfaces with warm interaction accents.",
+      "Readable HTML inventory beside keyboard, pointer, and touch exploration."
+    ],
+    "rules": [
+      {
+        "name": "The Warm Signal Rule",
+        "body": "Gold connects primary actions, focus, the chest, and selected inventory items; mint marks availability and visited progress.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "Pixelify Sans names the world and its actions; Manrope carries project summaries and explanatory prose.",
+        "section": "typography"
+      },
+      {
+        "name": "The Material Edge Rule",
+        "body": "Use square borders and lighter top edges to suggest inventory material; the world can retain its soft ambient light and shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use authored crisp SVG icons and pixelated canvas rendering.",
+      "Do preserve visible gold focus and immediate HTML access to real portfolio content.",
+      "Do keep project descriptions in Manrope with a comfortable reading measure.",
+      "Do carry selected, visited, disabled, and pressed states through their existing color and edge treatments."
+    ],
+    "donts": [
+      "Don't substitute copied game textures or sprites for original artwork.",
+      "Don't require walking skill to reach the portfolio sections.",
+      "Don't inherit legacy route styles into the homepage without an explicit reconciliation."
+    ]
+  }
+}
